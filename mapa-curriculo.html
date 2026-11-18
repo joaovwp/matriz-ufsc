@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa de Currículo UFSC</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#111827; --text:#e5e7eb; --muted:#94a3b8;
+    --accent:#3b82f6; --border:#334155; --danger:#ef4444; --ok:#10b981;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  header h1{font-size:18px;margin:0;font-weight:600;}
+  header p{margin:0;color:var(--muted);font-size:13px;}
+  main{padding:20px 24px 60px;max-width:1600px;margin:0 auto;}
+  section.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:22px;}
+  section.card h2{margin:0 0 12px;font-size:15px;display:flex;align-items:center;gap:8px;}
+  section.card h2 .num{background:var(--accent);color:white;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex:none;}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  input[type=file]{color:var(--text);}
+  button{background:var(--accent);color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;}
+  button.secondary{background:var(--panel2);border:1px solid var(--border);}
+  button.danger{background:var(--danger);}
+  button:disabled{opacity:.5;cursor:not-allowed;}
+  button:hover:not(:disabled){filter:brightness(1.1);}
+  #status{font-size:13px;color:var(--muted);margin-top:8px;white-space:pre-wrap;}
+  #warnings{font-size:12px;color:#fbbf24;margin-top:8px;white-space:pre-wrap;max-height:120px;overflow:auto;}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;}
+  th,td{border:1px solid var(--border);padding:5px 6px;text-align:left;vertical-align:top;}
+  th{background:var(--panel2);position:sticky;top:0;}
+  td input, td select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:12.5px;}
+  td input.small{width:70px;}
+  .tbl-wrap{max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:8px;}
+  details.rev summary{cursor:pointer;font-size:13px;color:var(--muted);padding:4px 0;}
+  details.rev[open] summary{margin-bottom:10px;}
+  .hint{font-size:12px;color:var(--muted);margin-top:4px;}
+  .toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;}
+  #svgHolder{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff;position:relative;height:72vh;}
+  #svgHolder svg{cursor:grab;width:100%;height:100%;display:block;}
+  #svgHolder svg:active{cursor:grabbing;}
+
+  /* --- node styling (SVG) --- */
+  .node rect{stroke-width:2; stroke: var(--course-color,#2563eb); transition:fill .15s,opacity .15s,stroke .15s;}
+  .node text{transition:fill .15s;}
+  .node text.code{font-weight:700;font-size:11px; fill:var(--course-color,#2563eb);}
+  .node text.name{font-size:10.5px;fill:#1f2937;}
+  .node text.meta{font-size:9.5px;fill:#6b7280;}
+  .node{cursor:pointer;}
+  .node.elective rect{stroke-dasharray:5,3;}
+
+  .node.status-locked rect{fill:#e2e8f0; opacity:.5;}
+  .node.status-locked text.code{fill:#94a3b8;}
+  .node.status-locked text.name{fill:#9ca3af;}
+  .node.status-locked text.meta{fill:#9ca3af;}
+
+  .node.status-unlocked rect{fill:#ffffff; opacity:1;}
+  .node.status-unlocked rect{filter:drop-shadow(0 1px 2px rgba(0,0,0,.15));}
+
+  .node.status-cursando rect{fill:#3b82f6; stroke:#1d4ed8; opacity:1;}
+  .node.status-cursando text.code{fill:#fff;}
+  .node.status-cursando text.name{fill:#eff6ff;}
+  .node.status-cursando text.meta{fill:#dbeafe;}
+
+  .node.status-completo rect{fill:#10b981; stroke:#047857; opacity:1;}
+  .node.status-completo text.code{fill:#fff;}
+  .node.status-completo text.name{fill:#ecfdf5;}
+  .node.status-completo text.meta{fill:#d1fae5;}
+
+  path.edge{fill:none;stroke:#94a3b8;stroke-width:1.6;opacity:.85;}
+  path.edge.skip{stroke:#64748b;stroke-width:1.4;opacity:.6;}
+  path.edge.edge-dim{opacity:.18;}
+  path.edge.edge-hot{opacity:1;stroke:#2563eb;stroke-width:2.2;}
+  .colhead{font-size:13px;font-weight:700;fill:#1f2937;}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .swatch{width:13px;height:13px;border-radius:4px;display:inline-block;border:2px solid #475569;}
+
+  /* --- aside (optativas/atividades) cards --- */
+  #asideWrap{display:flex;gap:18px;flex-wrap:wrap;}
+  .aside-group{flex:1 1 320px;min-width:280px;}
+  .aside-group h3{font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
+  .aside-grid{display:flex;flex-wrap:wrap;gap:10px;}
+  .aside-card{
+    width:150px;min-height:72px;border-radius:8px;border:2px solid var(--course-color,#2563eb);
+    background:#fff;color:#1f2937;padding:8px;cursor:pointer;font-size:11px;position:relative;
+    transition:opacity .15s, background .15s;
+  }
+  .aside-card.elective{border-style:dashed;}
+  .aside-card .code{font-weight:700;font-size:11px;color:var(--course-color,#2563eb);}
+  .aside-card .name{font-size:10px;margin-top:3px;line-height:1.25;color:#374151;}
+  .aside-card .meta{font-size:9px;color:#6b7280;position:absolute;bottom:6px;left:8px;}
+
+  .aside-card.status-locked{opacity:.5;background:#e2e8f0;}
+  .aside-card.status-locked .code,.aside-card.status-locked .name{color:#94a3b8;}
+  .aside-card.status-unlocked{box-shadow:0 1px 3px rgba(0,0,0,.15);}
+  .aside-card.status-cursando{background:#3b82f6;border-color:#1d4ed8;}
+  .aside-card.status-cursando .code,.aside-card.status-cursando .name,.aside-card.status-cursando .meta{color:#eff6ff;}
+  .aside-card.status-completo{background:#10b981;border-color:#047857;}
+  .aside-card.status-completo .code,.aside-card.status-completo .name,.aside-card.status-completo .meta{color:#ecfdf5;}
+
+  .progress-box{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px;}
+  .progress-box b{color:var(--text);}
+
+  /* --- Modal/Popup --- */
+  .modal-overlay{
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:rgba(0,0,0,0.5);z-index:1000;
+    display:none;align-items:center;justify-content:center;
+  }
+  .modal-overlay.active{display:flex;}
+  .modal-content{
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:12px;padding:24px;max-width:400px;
+    width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3);
+  }
+  .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .modal-header h3{margin:0;font-size:16px;}
+  .modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px;}
+  .modal-close:hover{color:var(--text);}
+  .modal-section{margin-bottom:16px;}
+  .modal-section h4{margin:0 0 8px;font-size:13px;color:var(--muted);text-transform:uppercase;}
+  .modal-section p{margin:0;font-size:14px;line-height:1.5;}
+  .prereq-list{display:flex;flex-wrap:wrap;gap:6px;}
+  .prereq-tag{
+    background:var(--panel2);border:1px solid var(--border);
+    border-radius:4px;padding:4px 8px;font-size:12px;
+  }
+  .prereq-tag.met{border-color:var(--ok);color:var(--ok);}
+  .prereq-tag.missing{border-color:var(--danger);color:var(--danger);}
+  .status-buttons{display:flex;gap:8px;margin-top:20px;}
+  .status-btn{
+    flex:1;padding:10px;border-radius:6px;cursor:pointer;
+    font-size:13px;font-weight:500;border:1px solid var(--border);
+    background:var(--panel2);color:var(--text);
+  }
+  .status-btn:hover{filter:brightness(1.1);}
+  .status-btn.active{background:var(--accent);border-color:var(--accent);color:white;}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Mapa de Currículo (padrão UFSC / SeTIC)</h1>
+    <p>Envie o PDF "Currículo do Curso" — o mapa é gerado automaticamente. Clique numa disciplina para ver detalhes e marcar progresso.</p>
+  </div>
+</header>
+<main>
+
+  <section class="card">
+    <h2><span class="num">1</span> Enviar PDF</h2>
+    <div class="row">
+      <input type="file" id="fileInput" accept="application/pdf">
+      <button id="btnProcess" disabled>Processar PDF e gerar mapa</button>
+      <button class="secondary" id="btnClearData" type="button">Limpar dados salvos</button>
+    </div>
+    <div id="status">Selecione o arquivo PDF exportado pelo sistema da UFSC (relatório "CURRÍCULO DO CURSO").</div>
+    <div id="warnings"></div>
+  </section>
+
+  <section class="card" id="reviewSection" style="display:none">
+    <details class="rev">
+      <summary>Revisar / corrigir disciplinas extraídas (abrir se algum pré-requisito ficou errado)</summary>
+      <div class="hint">
+        A coluna "Equivalentes" (códigos antigos, prefixo ARA) é descartada automaticamente. A coluna de pré-requisitos foi extraída por heurística —
+        em disciplinas com várias alternativas "ou"/"eh" encadeadas pode haver erro. Corrija os códigos (separados por vírgula) e clique em "Atualizar mapa".
+      </div>
+      <div class="row" style="margin:10px 0;">
+        <button class="secondary" id="btnAddRow" type="button">+ Adicionar disciplina manual</button>
+        <span id="countInfo" class="hint"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table id="reviewTable">
+          <thead>
+            <tr>
+              <th style="width:110px">Fase</th>
+              <th style="width:110px">Código</th>
+              <th>Nome</th>
+              <th style="width:70px">Tipo</th>
+              <th style="width:70px">H/A</th>
+              <th style="width:220px">Pré-requisitos (códigos, vírgula)</th>
+              <th style="width:40px"></th>
+            </tr>
+          </thead>
+          <tbody id="reviewBody"></tbody>
+        </table>
+      </div>
+      <div class="row" style="margin-top:14px;">
+        <button id="btnGenerate">Atualizar mapa</button>
+      </div>
+    </details>
+  </section>
+
+  <section class="card" id="mapSection" style="display:none">
+    <h2><span class="num">2</span> Mapa de disciplinas obrigatórias</h2>
+    <div class="toolbar">
+      <button class="secondary" id="btnZoomIn" type="button">+</button>
+      <button class="secondary" id="btnZoomOut" type="button">−</button>
+      <button class="secondary" id="btnZoomReset" type="button">Reset zoom</button>
+      <button class="secondary" id="btnDownload" type="button">Baixar SVG</button>
+      <button class="danger" id="btnClearStatus" type="button">Limpar progresso</button>
+    </div>
+    <div id="svgHolder"></div>
+    <div class="legend" id="legend"></div>
+    <div class="progress-box" id="progressBox"></div>
+  </section>
+
+  <section class="card" id="asideSection" style="display:none">
+    <h2><span class="num">3</span> Optativas e Atividades Complementares</h2>
+    <div class="hint">Estas disciplinas ficam fora da trilha principal de pré-requisitos (ou têm pré-requisitos próprios independentes das fases). Clique para marcar progresso também.</div>
+    <div id="asideWrap" style="margin-top:12px;"></div>
+  </section>
+
+  <div id="courseModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Detalhes da Disciplina</h3>
+        <button class="modal-close" id="modalClose">×</button>
+      </div>
+      <div class="modal-section">
+        <h4>Código</h4>
+        <p id="modalCode">-</p>
+      </div>
+      <div class="modal-section">
+        <h4>Nome</h4>
+        <p id="modalName">-</p>
+      </div>
+      <div class="modal-section">
+        <h4>Carga Horária</h4>
+        <p id="modalHA">-</p>
+      </div>
+      <div class="modal-section">
+        <h4>Pré-requisitos Obrigatórios</h4>
+        <div id="modalPrereqs" class="prereq-list">-</div>
+      </div>
+      <div class="modal-section">
+        <h4>Status</h4>
+        <div class="status-buttons">
+          <button class="status-btn" data-status="">Não iniciada</button>
+          <button class="status-btn" data-status="cursando">Cursando</button>
+          <button class="status-btn" data-status="completo">Concluída</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+/* ---------------------------------------------------------------------
+   STATUS PERSISTENTE (localStorage)
+--------------------------------------------------------------------- */
+let courseStatus = {};
+try { courseStatus = JSON.parse(localStorage.getItem('mapaCurriculoStatus') || '{}'); } catch(e){ courseStatus = {}; }
+function persistStatus(){
+  try { localStorage.setItem('mapaCurriculoStatus', JSON.stringify(courseStatus)); } catch(e){}
+}
+function clearStatus(){
+  courseStatus = {};
+  persistStatus();
+}
+
+/* ---------------------------------------------------------------------
+   1. EXTRAÇÃO DE TEXTO (linhas) DO PDF
+--------------------------------------------------------------------- */
+async function extractLines(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+  const lines = [];
+  for (let p = 1; p <= pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const items = content.items
+      .map(it => ({str: it.str, x: it.transform[4], y: it.transform[5], w: it.width || 0}))
+      .filter(it => it.str.trim() !== '');
+    items.sort((a,b)=> (b.y - a.y) || (a.x - b.x));
+    const Y_TOL = 2.6;
+    let cur = []; let curY = null;
+    const pageLines = [];
+    for (const it of items){
+      if (curY === null || Math.abs(it.y - curY) <= Y_TOL){
+        cur.push(it);
+        if (curY === null) curY = it.y;
+      } else {
+        pageLines.push(finalizeLine(cur));
+        cur = [it]; curY = it.y;
+      }
+    }
+    if (cur.length) pageLines.push(finalizeLine(cur));
+    lines.push(...pageLines);
+  }
+  return lines;
+}
+
+function finalizeLine(items){
+  items.sort((a,b)=>a.x-b.x);
+  let text = '';
+  let prev = null;
+  for (const it of items){
+    if (prev){
+      const gap = it.x - (prev.x + prev.w);
+      text += gap > 1.2 ? ' ' : '';
+    }
+    text += it.str;
+    prev = it;
+  }
+  return text.replace(/\s+/g,' ').trim();
+}
+
+/* ---------------------------------------------------------------------
+   2. PARSER DO FORMATO "CURRÍCULO DO CURSO" (SeTIC/UFSC)
+--------------------------------------------------------------------- */
+const SKIP_RE = /(CURRÍCULO DO CURSO|^Curso:|^Currículo:|^Habilitação:|SeTIC\s*-\s*Superintend|Página:\s*\d+|^\d{2}\/\d{2}\/\d{4}|^Conjunto$|Disciplina\s*Tipo\s*H\/A|^DOCUMENTO|^Objetivo:|^Titulação:|^Diplomado em:|^Período de Conclusão|^Carga Horária|^Número de aulas|^Coordenador do Curso|^Telefone:|^Documentação:|^Resolução|^Autorizado Portaria|^Reconhecimento do Curso)/i;
+const PHASE_RE = /^(\d+)\s*ª?\s*FASE$/i;
+const OPT_RE = /^DISCIPLINAS OPTATIVAS$/i;
+const ATV_RE = /^ATIVIDADES COMPLEMENTARES$/i;
+const ROWSTART_RE = /^(-|[A-Z]{2,6}\d{3,5})\s+(.*)$/;
+const TIPO_RE = /\b(Ob|Op|Es|Ex)\b/;
+const CODE_RE = /[A-Z]{2,6}\d{3,5}/g;
+
+function parseCurriculo(lines){
+  const phases = {};
+  let currentPhase = null;
+  let pendingHA = null;
+  const warnings = [];
+  let optCounter = 0;
+
+  function ensurePhase(key, label, order){
+    if (!phases[key]) phases[key] = {label, order, courses:[]};
+    return phases[key];
+  }
+
+  const n = lines.length;
+  let i = 0;
+  while (i < n){
+    const line = lines[i];
+    if (!line){ i++; continue; }
+    if (SKIP_RE.test(line)){ i++; continue; }
+
+    let m;
+    if ((m = PHASE_RE.exec(line))){
+      const num = parseInt(m[1],10);
+      currentPhase = ensurePhase('F'+num, num+'ª Fase', num);
+      pendingHA = null; i++; continue;
+    }
+    if (OPT_RE.test(line)){
+      currentPhase = ensurePhase('OPT','Optativas', 9000);
+      pendingHA = null; i++; continue;
+    }
+    if (ATV_RE.test(line)){
+      currentPhase = ensurePhase('ATV','Atividades Complementares', 9001);
+      pendingHA = null; i++; continue;
+    }
+    if (/^\d{1,4}$/.test(line) && currentPhase){
+      pendingHA = line; i++; continue;
+    }
+    if (currentPhase && ROWSTART_RE.test(line) && TIPO_RE.test(line.slice(0,90))){
+      let rowText = line;
+      let j = i + 1;
+      while (j < n){
+        const l2 = lines[j];
+        if (l2 == null){ j++; continue; }
+        if (SKIP_RE.test(l2)){ j++; continue; }
+        if (/^\d{1,4}$/.test(l2)) break;
+        if (PHASE_RE.test(l2) || OPT_RE.test(l2) || ATV_RE.test(l2)) break;
+        if (ROWSTART_RE.test(l2) && TIPO_RE.test(l2.slice(0,90))) break;
+        rowText += ' ' + l2;
+        j++;
+      }
+      const course = parseRow(rowText, pendingHA, warnings, () => (++optCounter));
+      if (course) currentPhase.courses.push(course);
+      pendingHA = null;
+      i = j;
+      continue;
+    }
+    i++;
+  }
+  return {phases, warnings};
+}
+
+function parseRow(rowText, ha, warnings, nextOptId){
+  const m = ROWSTART_RE.exec(rowText);
+  if (!m) return null;
+  let code = m[1];
+  let rest = m[2];
+  const tm = TIPO_RE.exec(rest);
+  if (!tm){ warnings.push('Linha ignorada (sem Tipo): ' + rowText.slice(0,80)); return null; }
+  const tipo = tm[1];
+  const name = rest.slice(0, tm.index).replace(/\s+/g,' ').trim();
+  let tail = rest.slice(tm.index + tipo.length).trim();
+
+  const am = /^(\d+)\s*(.*)$/.exec(tail);
+  let aulas = null;
+  if (am){ aulas = am[1]; tail = am[2]; }
+
+  if (code === '-'){
+    code = 'OPT' + nextOptId() + '_' + (name.replace(/[^A-Za-z0-9]+/g,'').slice(0,12) || 'ITEM');
+  }
+
+  const allCodes = tail.match(CODE_RE) || [];
+  const prereqs = [...new Set(allCodes.filter(c => !c.startsWith('ARA') && c !== code))];
+
+  return { code, name: name || code, tipo, ha, prereqs };
+}
+
+/* ---------------------------------------------------------------------
+   3. ESTADO GLOBAL E UI DE REVISÃO
+--------------------------------------------------------------------- */
+let phaseMeta = {};
+let courseList = [];
+let rowSeq = 0;
+let allCourseMeta = {}; // code -> {name, tipo, prereqs, isAside}
+
+const fileInput = document.getElementById('fileInput');
+const btnProcess = document.getElementById('btnProcess');
+const statusEl = document.getElementById('status');
+const warnEl = document.getElementById('warnings');
+
+fileInput.addEventListener('change', () => { btnProcess.disabled = !fileInput.files.length; });
+
+btnProcess.addEventListener('click', async () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+  btnProcess.disabled = true;
+  statusEl.textContent = 'Lendo PDF...';
+  warnEl.textContent = '';
+  try {
+    const lines = await extractLines(file);
+    statusEl.textContent = 'Interpretando estrutura do currículo...';
+    const {phases, warnings} = parseCurriculo(lines);
+
+    phaseMeta = {}; courseList = []; rowSeq = 0;
+    Object.keys(phases).forEach(key => {
+      const ph = phases[key];
+      phaseMeta[key] = {label: ph.label, order: ph.order};
+      ph.courses.forEach(c => {
+        courseList.push({ id: 'r'+(++rowSeq), phaseKey: key, code:c.code, name:c.name, tipo:c.tipo, ha:c.ha||'', prereqs:c.prereqs });
+      });
+    });
+
+    statusEl.textContent = `Pronto: ${courseList.length} disciplinas em ${Object.keys(phaseMeta).length} grupos. Gerando mapa...`;
+    if (warnings.length) warnEl.textContent = 'Avisos (' + warnings.length + '):\n' + warnings.slice(0,30).join('\n');
+
+    buildReviewTable();
+    document.getElementById('reviewSection').style.display = 'block';
+    regenerateMap();
+    statusEl.textContent = `Mapa gerado: ${courseList.length} disciplinas em ${Object.keys(phaseMeta).length} grupos. Se algum pré-requisito parecer errado, abra "Revisar/corrigir" acima.`;
+    document.getElementById('mapSection').scrollIntoView({behavior:'smooth'});
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = 'Erro ao processar o PDF: ' + err.message;
+  } finally {
+    btnProcess.disabled = false;
+  }
+});
+
+document.getElementById('btnClearData').addEventListener('click', () => {
+  if (!confirm('Limpar todos os dados salvos (progresso, disciplinas, etc)?')) return;
+  clearStatus();
+  localStorage.removeItem('mapaCurriculoStatus');
+  statusEl.textContent = 'Dados limpos. Carregue um PDF novamente.';
+  document.getElementById('reviewSection').style.display = 'none';
+  document.getElementById('mapSection').style.display = 'none';
+  document.getElementById('asideSection').style.display = 'none';
+});
+
+function phaseOptionsHTML(selectedKey){
+  const keys = Object.keys(phaseMeta).sort((a,b)=>phaseMeta[a].order-phaseMeta[b].order);
+  return keys.map(k => `<option value="${k}" ${k===selectedKey?'selected':''}>${esc(phaseMeta[k].label)}</option>`).join('');
+}
+
+function buildReviewTable(){
+  const body = document.getElementById('reviewBody');
+  body.innerHTML = '';
+  const sorted = [...courseList].sort((a,b)=>{
+    const oa = phaseMeta[a.phaseKey] ? phaseMeta[a.phaseKey].order : 999999;
+    const ob = phaseMeta[b.phaseKey] ? phaseMeta[b.phaseKey].order : 999999;
+    return oa - ob;
+  });
+  sorted.forEach(c => body.appendChild(buildRow(c)));
+  updateCountInfo();
+}
+
+function buildRow(c){
+  const tr = document.createElement('tr');
+  tr.dataset.id = c.id;
+  tr.innerHTML = `
+    <td><select class="f-phase">${phaseOptionsHTML(c.phaseKey)}</select></td>
+    <td><input class="f-code" value="${esc(c.code)}"></td>
+    <td><input class="f-name" value="${esc(c.name)}"></td>
+    <td><select class="f-tipo">${['Ob','Op','Es','Ex'].map(t=>`<option ${t===c.tipo?'selected':''}>${t}</option>`).join('')}</select></td>
+    <td><input class="f-ha small" value="${esc(c.ha||'')}"></td>
+    <td><input class="f-prereq" value="${esc((c.prereqs||[]).join(', '))}"></td>
+    <td><button type="button" class="danger btn-del">×</button></td>
+  `;
+  tr.querySelector('.btn-del').addEventListener('click', () => { tr.remove(); updateCountInfo(); });
+  return tr;
+}
+
+document.getElementById('btnAddRow').addEventListener('click', () => {
+  const firstKey = Object.keys(phaseMeta)[0] || 'F1';
+  if (!phaseMeta[firstKey]) phaseMeta[firstKey] = {label:'1ª Fase', order:1};
+  const c = {id:'r'+(++rowSeq), phaseKey:firstKey, code:'NOVO'+rowSeq, name:'Nova disciplina', tipo:'Ob', ha:'', prereqs:[]};
+  document.getElementById('reviewBody').appendChild(buildRow(c));
+  updateCountInfo();
+});
+
+function updateCountInfo(){
+  document.getElementById('countInfo').textContent = document.getElementById('reviewBody').children.length + ' disciplina(s) na tabela.';
+}
+
+document.getElementById('btnGenerate').addEventListener('click', regenerateMap);
+
+/* ---------------------------------------------------------------------
+   4. LEITURA DA TABELA -> MODELO DE DADOS
+--------------------------------------------------------------------- */
+function esc(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function wrapText(str, maxChars){
+  const words = String(str||'').split(/\s+/).filter(Boolean);
+  const lines = []; let cur = '';
+  words.forEach(w => {
+    if ((cur + ' ' + w).trim().length > maxChars && cur){ lines.push(cur.trim()); cur = w; }
+    else cur = (cur ? cur + ' ' : '') + w;
+  });
+  if (cur) lines.push(cur.trim());
+  return lines.length ? lines : [''];
+}
+
+function readCoursesFromTable(){
+  const rows = Array.from(document.querySelectorAll('#reviewBody tr'));
+  const courses = [];
+  rows.forEach(tr => {
+    const phaseKey = tr.querySelector('.f-phase').value;
+    const code = tr.querySelector('.f-code').value.trim();
+    const name = tr.querySelector('.f-name').value.trim();
+    const tipo = tr.querySelector('.f-tipo').value;
+    const ha = tr.querySelector('.f-ha').value.trim();
+    const prereqs = tr.querySelector('.f-prereq').value.split(',').map(s=>s.trim()).filter(Boolean);
+    if (!code) return;
+    courses.push({phaseKey, code, name: name || code, tipo, ha, prereqs});
+  });
+  return courses;
+}
+
+/* ---------------------------------------------------------------------
+   5. LAYOUT DO MAPA PRINCIPAL (apenas fases numéricas)
+--------------------------------------------------------------------- */
+const PREFIX_COLORS = {};
+const PALETTE = ['#2563eb','#7c3aed','#059669','#dc2626','#ea580c','#0891b2','#be185d','#4d7c0f','#9333ea','#0d9488'];
+function colorFor(code){
+  const prefix = code.replace(/\d.*/,'').replace(/_.*/,'') || 'OPT';
+  if (!PREFIX_COLORS[prefix]) PREFIX_COLORS[prefix] = PALETTE[Object.keys(PREFIX_COLORS).length % PALETTE.length];
+  return PREFIX_COLORS[prefix];
+}
+
+function assignLanes(items){
+  // items: [{lo,hi}] -> atribui lane (0,1,2...) sem sobrepor intervalos [lo,hi]
+  function overlap(occupied, it){ return !(it.hi <= occupied.lo || it.lo >= occupied.hi); }
+  const sorted = [...items].sort((a,b)=> (a.hi-a.lo) - (b.hi-b.lo));
+  const laneEnds = [];
+  sorted.forEach(it => {
+    let lane = 0;
+    while (laneEnds[lane] !== undefined && overlap(laneEnds[lane], it)) lane++;
+    laneEnds[lane] = {lo: Math.min(laneEnds[lane]?laneEnds[lane].lo:it.lo, it.lo), hi: Math.max(laneEnds[lane]?laneEnds[lane].hi:it.hi, it.hi)};
+    it.lane = lane;
+  });
+  return sorted.length ? Math.max(...sorted.map(s=>s.lane))+1 : 0;
+}
+
+/* -------------------------------------------------------------------
+   LAYOUT EM CAMADAS (estilo Sugiyama): cada fase é uma coluna fixa.
+   Pré-requisitos que pulam fases ganham nós-fantasma (invisíveis) nas
+   colunas intermediárias, reservando uma "fatia" de altura por onde a
+   seta passa reto — assim ela nunca atravessa um bloco de disciplina
+   nem precisa subir até o topo do mapa. Depois, algumas passadas de
+   "barycenter" reordenam as disciplinas dentro de cada coluna pra
+   reduzir cruzamentos entre as setas.
+------------------------------------------------------------------- */
+const NODE_W = 184, GUTTER = 108, COL_SPACING = NODE_W + GUTTER,
+      ROW_GAP = 22, DUMMY_GAP = 10, LINE_H = 13, BASE_PAD = 36,
+      TOP_MARGIN = 54, GUTTER_LANE_SPACING = 10;
+
+function buildLayout(mainCourses){
+  const byPhase = {};
+  mainCourses.forEach(c => { (byPhase[c.phaseKey] = byPhase[c.phaseKey] || []).push(c); });
+  const colOrder = Object.keys(byPhase).sort((a,b)=> (phaseMeta[a]?phaseMeta[a].order:999) - (phaseMeta[b]?phaseMeta[b].order:999));
+  const colIndex = {}; colOrder.forEach((k,i)=> colIndex[k]=i);
+
+  const nodeMeta = {};      // code -> {isDummy, col, lines, height, course}
+  const columnNodes = {};   // colIdx -> [codes] (ordem, será refinada)
+  colOrder.forEach((k,ci) => {
+    columnNodes[ci] = [];
+    (byPhase[k]||[]).forEach(c => {
+      const lines = wrapText(c.name, 25);
+      const h = BASE_PAD + lines.length*LINE_H;
+      nodeMeta[c.code] = {isDummy:false, col:ci, lines, height:h, course:c};
+      columnNodes[ci].push(c.code);
+    });
+  });
+
+  const codeToCol = {}; Object.keys(nodeMeta).forEach(c => codeToCol[c] = nodeMeta[c].col);
+  const missing = new Set();
+  const origEdges = [];   // {id, src, tgt}
+  const hops = [];        // {from, to, origId} — sempre entre colunas adjacentes
+  let dummySeq = 0;
+
+  mainCourses.forEach(c => {
+    (c.prereqs||[]).forEach(p => {
+      if (!(p in codeToCol)){ missing.add(p); return; }
+      const sCol = codeToCol[p], tCol = codeToCol[c.code];
+      if (tCol <= sCol) return; // mesma fase ou "pra trás": não gera seta
+      const id = origEdges.length;
+      origEdges.push({id, src:p, tgt:c.code});
+      if (tCol - sCol === 1){
+        hops.push({from:p, to:c.code, origId:id});
+      } else {
+        let prev = p;
+        for (let col = sCol+1; col < tCol; col++){
+          const dId = '__d'+(dummySeq++);
+          nodeMeta[dId] = {isDummy:true, col, height:8};
+          columnNodes[col].push(dId);
+          hops.push({from:prev, to:dId, origId:id});
+          prev = dId;
+        }
+        hops.push({from:prev, to:c.code, origId:id});
+      }
+    });
+  });
+
+  // --- redução de cruzamentos: heurística de barycenter, algumas passadas ---
+  const leftN = {}, rightN = {};
+  hops.forEach(h => {
+    (rightN[h.from] = rightN[h.from] || []).push(h.to);
+    (leftN[h.to] = leftN[h.to] || []).push(h.from);
+  });
+  const maxCol = colOrder.length - 1;
+  const indexMap = arr => { const m={}; arr.forEach((id,i)=>m[id]=i); return m; };
+  const meanOf = arr => arr.reduce((a,b)=>a+b,0) / arr.length;
+
+  for (let iter = 0; iter < 8; iter++){
+    if (iter % 2 === 0){
+      for (let c = 1; c <= maxCol; c++){
+        const prevIdx = indexMap(columnNodes[c-1]);
+        const arr = columnNodes[c];
+        const bary = arr.map((id,i) => {
+          const ns = leftN[id];
+          return ns && ns.length ? meanOf(ns.map(n => prevIdx[n] !== undefined ? prevIdx[n] : 0)) : i;
+        });
+        columnNodes[c] = arr.map((id,i)=>i).sort((a,b)=> bary[a]-bary[b] || a-b).map(i=>arr[i]);
+      }
+    } else {
+      for (let c = maxCol-1; c >= 0; c--){
+        const nextIdx = indexMap(columnNodes[c+1]);
+        const arr = columnNodes[c];
+        const bary = arr.map((id,i) => {
+          const ns = rightN[id];
+          return ns && ns.length ? meanOf(ns.map(n => nextIdx[n] !== undefined ? nextIdx[n] : 0)) : i;
+        });
+        columnNodes[c] = arr.map((id,i)=>i).sort((a,b)=> bary[a]-bary[b] || a-b).map(i=>arr[i]);
+      }
+    }
+  }
+
+  // --- posições finais (x,y,w,h) ---
+  const pos = {};
+  colOrder.forEach((k,ci) => {
+    let y = TOP_MARGIN;
+    columnNodes[ci].forEach(id => {
+      const meta = nodeMeta[id];
+      pos[id] = { x: ci*COL_SPACING, y, w: NODE_W, h: meta.height, col: ci, isDummy: meta.isDummy, meta };
+      y += meta.height + (meta.isDummy ? DUMMY_GAP : ROW_GAP);
+    });
+  });
+
+  // --- faixas (lanes) dentro de cada corredor entre colunas, pra nenhuma seta se sobrepor ---
+  const byGutter = {};
+  hops.forEach(h => {
+    const c = pos[h.from].col;
+    const fy = pos[h.from].y + pos[h.from].h/2, ty = pos[h.to].y + pos[h.to].h/2;
+    (byGutter[c] = byGutter[c] || []).push({h, lo:Math.min(fy,ty), hi:Math.max(fy,ty)});
+  });
+  Object.values(byGutter).forEach(items => {
+    assignLanes(items);
+    items.forEach(it => it.h.lane = it.lane);
+  });
+
+  // --- agrupa os "hops" de volta por pré-requisito original (ordem esquerda->direita) ---
+  const hopsByOrig = {};
+  hops.forEach(h => { (hopsByOrig[h.origId] = hopsByOrig[h.origId] || []).push(h); });
+
+  return {pos, colOrder, colIndex, origEdges, hopsByOrig, missing:[...missing]};
+}
+
+function unlocked(code){
+  const meta = allCourseMeta[code];
+  if (!meta) return true;
+  if (!meta.prereqs || !meta.prereqs.length) return true;
+  return meta.prereqs.every(p => !allCourseMeta[p] || courseStatus[p] === 'completo');
+}
+function statusClassFor(code){
+  const st = courseStatus[code];
+  if (st === 'completo') return 'status-completo';
+  if (st === 'cursando') return 'status-cursando';
+  return unlocked(code) ? 'status-unlocked' : 'status-locked';
+}
+
+function buildEdgePath(hopChain, pos){
+  // monta uma única polilinha ortogonal passando por todos os nós-fantasma da cadeia
+  const points = [];
+  let cx, cy;
+  hopChain.forEach((h, idx) => {
+    const fromPos = pos[h.from], toPos = pos[h.to];
+    const fromMidY = fromPos.y + fromPos.h/2, toMidY = toPos.y + toPos.h/2;
+    if (idx === 0){ cx = fromPos.x + fromPos.w; cy = fromMidY; points.push([cx,cy]); }
+    const laneX = fromPos.x + fromPos.w + 10 + (h.lane||0)*GUTTER_LANE_SPACING;
+    points.push([laneX, cy]);
+    points.push([laneX, toMidY]);
+    cy = toMidY;
+    const isLast = idx === hopChain.length - 1;
+    cx = isLast ? (toPos.x - 5) : (toPos.x + toPos.w);
+    points.push([cx, cy]);
+  });
+  return 'M' + points.map(p=>p.join(',')).join(' L');
+}
+
+function renderSVG(layout){
+  const {pos, colOrder, origEdges, hopsByOrig} = layout;
+
+  const maxColBottom = {};
+  colOrder.forEach((k,ci) => {
+    const inCol = Object.values(pos).filter(p => p.col === ci && !p.isDummy);
+    maxColBottom[ci] = inCol.length ? Math.max(...inCol.map(p => p.y+p.h)) : 60;
+  });
+  const maxBottom = Math.max(60, ...Object.values(maxColBottom));
+
+  const parts = [];
+
+  colOrder.forEach((k,ci) => {
+    const label = (phaseMeta[k]&&phaseMeta[k].label) || k;
+    parts.push(`<text x="${ci*COL_SPACING + 92}" y="20" text-anchor="middle" class="colhead">${esc(label)}</text>`);
+  });
+
+  // uma única <path> por pré-requisito original, mesmo quando atravessa várias fases
+  origEdges.forEach(e => {
+    const chain = hopsByOrig[e.id];
+    if (!chain) return;
+    const d = buildEdgePath(chain, pos);
+    parts.push(`<path d="${d}" class="edge" data-src="${esc(e.src)}" data-tgt="${esc(e.tgt)}" marker-end="url(#arrow)"/>`);
+  });
+
+  Object.entries(pos).forEach(([code, n]) => {
+    if (n.isDummy) return;
+    const course = n.meta.course;
+    const color = colorFor(code);
+    const haTxt = course.ha ? (course.ha+' h/a') : '';
+    const elective = course.tipo === 'Op' ? ' elective' : '';
+    const stCls = statusClassFor(code);
+    parts.push(`<g class="node ${stCls}${elective}" id="node-${esc(code)}" data-code="${esc(code)}" style="--course-color:${color}">
+      <title>${esc(code)} — ${esc(course.name)}${course.prereqs&&course.prereqs.length?('\nPré-requisitos: '+course.prereqs.join(', ')):''}</title>
+      <rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="8"/>
+      <text x="${n.x+n.w/2}" y="${n.y+16}" text-anchor="middle" class="code">${esc(code)}</text>
+      ${n.meta.lines.map((l,i)=>`<text x="${n.x+n.w/2}" y="${n.y+30+i*13}" text-anchor="middle" class="name">${esc(l)}</text>`).join('')}
+      <text x="${n.x+n.w/2}" y="${n.y+n.h-8}" text-anchor="middle" class="meta">${esc(course.tipo)}${haTxt?(' • '+haTxt):''}</text>
+    </g>`);
+  });
+
+  const totalW = colOrder.length*COL_SPACING + 40;
+  const totalH = maxBottom + 40;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalW} ${totalH}">
+    <defs>
+      <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#64748b"/>
+      </marker>
+    </defs>
+    <g id="viewport">${parts.join('')}</g>
+  </svg>`;
+}
+
+function buildLegend(){
+  const el = document.getElementById('legend');
+  const prefixItems = Object.entries(PREFIX_COLORS).map(([prefix,color]) =>
+    `<span><span class="swatch" style="border-color:${color};background:#fff"></span>${esc(prefix)}</span>`);
+  const statusItems = [
+    '<span><span class="swatch" style="background:#10b981;border-color:#047857"></span>Concluída</span>',
+    '<span><span class="swatch" style="background:#3b82f6;border-color:#1d4ed8"></span>Cursando</span>',
+    '<span><span class="swatch" style="background:#fff;border-color:#2563eb"></span>Disponível (pré-requisitos ok)</span>',
+    '<span><span class="swatch" style="background:#e2e8f0;border-color:#94a3b8;opacity:.6"></span>Bloqueada</span>',
+    '<span><span class="swatch" style="background:#fff;border-style:dashed;border-color:#334155"></span>Optativa</span>',
+  ];
+  el.innerHTML = statusItems.join('') + '<span style="width:1px;background:var(--border);align-self:stretch;"></span>' + prefixItems.join('');
+}
+
+function updateProgressBox(){
+  const codes = Object.keys(allCourseMeta);
+  const completo = codes.filter(c => courseStatus[c]==='completo').length;
+  const cursando = codes.filter(c => courseStatus[c]==='cursando').length;
+  const disponivel = codes.filter(c => !courseStatus[c] && unlocked(c)).length;
+  const bloqueada = codes.length - completo - cursando - disponivel;
+  document.getElementById('progressBox').innerHTML =
+    `<span><b>${completo}</b> concluídas</span><span><b>${cursando}</b> cursando</span>` +
+    `<span><b>${disponivel}</b> disponíveis agora</span><span><b>${bloqueada}</b> bloqueadas</span>` +
+    `<span>de <b>${codes.length}</b> disciplinas no total</span>`;
+}
+
+/* ---------------------------------------------------------------------
+   6. GERAÇÃO COMPLETA (chamada após processar PDF ou "Atualizar mapa")
+--------------------------------------------------------------------- */
+function regenerateMap(){
+  const courses = readCoursesFromTable();
+  if (!courses.length){ alert('Nenhuma disciplina na tabela.'); return; }
+
+  Object.keys(PREFIX_COLORS).forEach(k=>delete PREFIX_COLORS[k]);
+
+  const mainCourses = courses.filter(c => phaseMeta[c.phaseKey] && phaseMeta[c.phaseKey].order < 9000);
+  const asideCourses = courses.filter(c => !(phaseMeta[c.phaseKey] && phaseMeta[c.phaseKey].order < 9000));
+
+  allCourseMeta = {};
+  courses.forEach(c => { allCourseMeta[c.code] = {name:c.name, tipo:c.tipo, prereqs:c.prereqs, ha:c.ha}; });
+
+  const layout = buildLayout(mainCourses);
+  document.getElementById('svgHolder').innerHTML = renderSVG(layout);
+  buildLegend();
+  updateProgressBox();
+
+  if (layout.missing.length){
+    warnEl.textContent = 'Códigos de pré-requisito referenciados mas não encontrados na tabela (ignorados): ' + layout.missing.join(', ');
+  }
+
+  renderAside(asideCourses);
+
+  document.getElementById('mapSection').style.display = 'block';
+  document.getElementById('asideSection').style.display = asideCourses.length ? 'block' : 'none';
+  setupPanZoom();
+  attachNodeInteractions();
+}
+
+function renderAside(asideCourses){
+  const wrap = document.getElementById('asideWrap');
+  wrap.innerHTML = '';
+  const groups = {};
+  asideCourses.forEach(c => { (groups[c.phaseKey] = groups[c.phaseKey] || []).push(c); });
+  Object.keys(groups).sort((a,b)=> (phaseMeta[a]?phaseMeta[a].order:999)-(phaseMeta[b]?phaseMeta[b].order:999)).forEach(key => {
+    const label = (phaseMeta[key]&&phaseMeta[key].label) || key;
+    const groupEl = document.createElement('div');
+    groupEl.className = 'aside-group';
+    const haSum = groups[key].reduce((s,c)=> s + (parseInt(c.ha)||0), 0);
+    groupEl.innerHTML = `<h3>${esc(label)}${haSum?(' — '+haSum+' h/a'):''}</h3><div class="aside-grid"></div>`;
+    const grid = groupEl.querySelector('.aside-grid');
+    groups[key].forEach(c => {
+      const color = colorFor(c.code);
+      const elective = c.tipo === 'Op' ? ' elective' : '';
+      const stCls = statusClassFor(c.code);
+      const card = document.createElement('div');
+      card.className = `aside-card ${stCls}${elective}`;
+      card.id = 'aside-' + c.code;
+      card.dataset.code = c.code;
+      card.style.setProperty('--course-color', color);
+      card.title = c.code + ' — ' + c.name + (c.prereqs.length? ('\nPré-requisitos: '+c.prereqs.join(', ')) : '');
+      card.innerHTML = `<div class="code">${esc(c.code)}</div><div class="name">${esc(c.name)}</div><div class="meta">${esc(c.tipo)}${c.ha?(' • '+esc(c.ha)+'h/a'):''}</div>`;
+      grid.appendChild(card);
+    });
+    wrap.appendChild(groupEl);
+  });
+}
+
+/* ---------------------------------------------------------------------
+   7. INTERAÇÃO: clique = ciclar status, botão direito = voltar status
+--------------------------------------------------------------------- */
+function cycleStatus(code){
+  const cur = courseStatus[code];
+  if (!cur) courseStatus[code] = 'cursando';
+  else if (cur === 'cursando') courseStatus[code] = 'completo';
+  else delete courseStatus[code];
+  persistStatus();
+  refreshAllStyles();
+}
+
+function refreshAllStyles(){
+  Object.keys(allCourseMeta).forEach(code => {
+    const cls = statusClassFor(code);
+    const elective = allCourseMeta[code].tipo === 'Op' ? ' elective' : '';
+    const nodeEl = document.getElementById('node-'+code);
+    if (nodeEl) nodeEl.setAttribute('class', `node ${cls}${elective}`);
+    const cardEl = document.getElementById('aside-'+code);
+    if (cardEl) cardEl.className = `aside-card ${cls}${elective}`;
+  });
+  updateProgressBox();
+}
+
+function attachNodeInteractions(){
+  const svg = document.querySelector('#svgHolder svg');
+  if (svg && !svg.dataset.bound){
+    svg.addEventListener('click', (e) => {
+      const g = e.target.closest('.node');
+      if (!g) return;
+      openModal(g.dataset.code);
+    });
+    svg.dataset.bound = '1';
+  }
+  const aside = document.getElementById('asideWrap');
+  if (aside && !aside.dataset.bound){
+    aside.addEventListener('click', (e) => {
+      const c = e.target.closest('.aside-card');
+      if (!c) return;
+      openModal(c.dataset.code);
+    });
+    aside.dataset.bound = '1';
+  }
+}
+
+document.getElementById('btnClearStatus').addEventListener('click', () => {
+  if (!confirm('Limpar todo o progresso marcado (cursando/concluída)?')) return;
+  courseStatus = {};
+  persistStatus();
+  refreshAllStyles();
+});
+
+/* ---------------------------------------------------------------------
+   8. ZOOM / PAN / DOWNLOAD
+--------------------------------------------------------------------- */
+let viewState = {scale:1, tx:0, ty:0};
+
+function setupPanZoom(){
+  viewState = {scale:1, tx:0, ty:0};
+  applyTransform();
+  const svg = document.querySelector('#svgHolder svg');
+  if (!svg) return;
+  let dragging = false, lastX=0, lastY=0, moved=false;
+
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    viewState.scale = Math.min(4, Math.max(0.2, viewState.scale*delta));
+    applyTransform();
+  }, {passive:false});
+
+  svg.addEventListener('mousedown', (e) => { dragging = true; moved=false; lastX=e.clientX; lastY=e.clientY; });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    if (Math.abs(e.clientX-lastX) > 2 || Math.abs(e.clientY-lastY) > 2) moved = true;
+    viewState.tx += (e.clientX-lastX);
+    viewState.ty += (e.clientY-lastY);
+    lastX = e.clientX; lastY = e.clientY;
+    applyTransform();
+  });
+  window.addEventListener('mouseup', () => dragging=false);
+  // evita disparar clique-em-nó depois de arrastar o mapa
+  svg.addEventListener('click', (e) => { if (moved){ e.stopPropagation(); moved=false; } }, true);
+}
+
+function applyTransform(){
+  const g = document.getElementById('viewport');
+  if (!g) return;
+  g.setAttribute('transform', `translate(${viewState.tx},${viewState.ty}) scale(${viewState.scale})`);
+}
+
+document.getElementById('btnZoomIn').addEventListener('click', () => { viewState.scale = Math.min(4, viewState.scale*1.2); applyTransform(); });
+document.getElementById('btnZoomOut').addEventListener('click', () => { viewState.scale = Math.max(0.2, viewState.scale/1.2); applyTransform(); });
+document.getElementById('btnZoomReset').addEventListener('click', () => { viewState = {scale:1,tx:0,ty:0}; applyTransform(); });
+
+document.getElementById('btnDownload').addEventListener('click', () => {
+  const svg = document.querySelector('#svgHolder svg');
+  if (!svg) return;
+  const clone = svg.cloneNode(true);
+  clone.querySelector('#viewport').removeAttribute('transform');
+  const xml = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([xml], {type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'mapa-curriculo.svg';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+/* ---------------------------------------------------------------------
+   9. MODAL DE DETALHES DA DISCIPLINA
+--------------------------------------------------------------------- */
+const modal = document.getElementById('courseModal');
+const modalClose = document.getElementById('modalClose');
+let currentModalCode = null;
+
+function openModal(code){
+  const meta = allCourseMeta[code];
+  if (!meta) return;
+  currentModalCode = code;
+
+  document.getElementById('modalTitle').textContent = 'Detalhes da Disciplina';
+  document.getElementById('modalCode').textContent = code;
+  document.getElementById('modalName').textContent = meta.name;
+  document.getElementById('modalHA').textContent = meta.ha ? meta.ha + ' h/a' : '-';
+
+  const prereqContainer = document.getElementById('modalPrereqs');
+  if (!meta.prereqs || !meta.prereqs.length){
+    prereqContainer.innerHTML = '<span style="color:var(--muted)">Nenhum pré-requisito</span>';
+  } else {
+    prereqContainer.innerHTML = meta.prereqs.map(p => {
+      const met = courseStatus[p] === 'completo';
+      const exists = allCourseMeta[p];
+      const cls = met ? 'met' : (exists ? 'missing' : '');
+      const label = exists ? p : p + ' (não encontrada)';
+      return `<span class="prereq-tag ${cls}">${esc(label)}</span>`;
+    }).join('');
+  }
+
+  const currentStatus = courseStatus[code] || '';
+  document.querySelectorAll('.status-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.status === currentStatus);
+  });
+
+  modal.classList.add('active');
+}
+
+function closeModal(){
+  modal.classList.remove('active');
+  currentModalCode = null;
+}
+
+modalClose.addEventListener('click', closeModal);
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) closeModal();
+});
+
+document.querySelectorAll('.status-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (!currentModalCode) return;
+    const newStatus = btn.dataset.status;
+    if (newStatus === ''){
+      delete courseStatus[currentModalCode];
+    } else {
+      courseStatus[currentModalCode] = newStatus;
+    }
+    persistStatus();
+    refreshAllStyles();
+    document.querySelectorAll('.status-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.status === newStatus);
+    });
+  });
+});
+</script>
+</body>
+</html>
