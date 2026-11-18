@@ -3,249 +3,1143 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mapa de Currículo UFSC</title>
+<title>UniPath - Mapa de Currículo</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
-  :root{
-    --bg:#0f172a; --panel:#1e293b; --panel2:#111827; --text:#e5e7eb; --muted:#94a3b8;
-    --accent:#3b82f6; --border:#334155; --danger:#ef4444; --ok:#10b981;
+  :root {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --border: #e2e8f0;
+    --border-light: #f1f5f9;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --success: #10b981;
+    --success-bg: #d1fae5;
+    --success-border: #059669;
+    --warning: #f59e0b;
+    --warning-bg: #fef3c7;
+    --danger: #ef4444;
+    --danger-bg: #fee2e2;
+    --info: #3b82f6;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --sidebar-width: 420px;
   }
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
-  header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-  header h1{font-size:18px;margin:0;font-weight:600;}
-  header p{margin:0;color:var(--muted);font-size:13px;}
-  main{padding:20px 24px 60px;max-width:1600px;margin:0 auto;}
-  section.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:22px;}
-  section.card h2{margin:0 0 12px;font-size:15px;display:flex;align-items:center;gap:8px;}
-  section.card h2 .num{background:var(--accent);color:white;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex:none;}
-  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-  input[type=file]{color:var(--text);}
-  button{background:var(--accent);color:white;border:none;padding:9px 16px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;}
-  button.secondary{background:var(--panel2);border:1px solid var(--border);}
-  button.danger{background:var(--danger);}
-  button:disabled{opacity:.5;cursor:not-allowed;}
-  button:hover:not(:disabled){filter:brightness(1.1);}
-  #status{font-size:13px;color:var(--muted);margin-top:8px;white-space:pre-wrap;}
-  #warnings{font-size:12px;color:#fbbf24;margin-top:8px;white-space:pre-wrap;max-height:120px;overflow:auto;}
-  table{border-collapse:collapse;width:100%;font-size:12.5px;}
-  th,td{border:1px solid var(--border);padding:5px 6px;text-align:left;vertical-align:top;}
-  th{background:var(--panel2);position:sticky;top:0;}
-  td input, td select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:12.5px;}
-  td input.small{width:70px;}
-  .tbl-wrap{max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:8px;}
-  details.rev summary{cursor:pointer;font-size:13px;color:var(--muted);padding:4px 0;}
-  details.rev[open] summary{margin-bottom:10px;}
-  .hint{font-size:12px;color:var(--muted);margin-top:4px;}
-  .toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;}
-  #svgHolder{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff;position:relative;height:72vh;}
-  #svgHolder svg{cursor:grab;width:100%;height:100%;display:block;}
-  #svgHolder svg:active{cursor:grabbing;}
 
-  /* --- node styling (SVG) --- */
-  .node rect{stroke-width:2; stroke: var(--course-color,#2563eb); transition:fill .15s,opacity .15s,stroke .15s;}
-  .node text{transition:fill .15s;}
-  .node text.code{font-weight:700;font-size:11px; fill:var(--course-color,#2563eb);}
-  .node text.name{font-size:10.5px;fill:#1f2937;}
-  .node text.meta{font-size:9.5px;fill:#6b7280;}
-  .node{cursor:pointer;}
-  .node.elective rect{stroke-dasharray:5,3;}
-
-  .node.status-locked rect{fill:#e2e8f0; opacity:.5;}
-  .node.status-locked text.code{fill:#94a3b8;}
-  .node.status-locked text.name{fill:#9ca3af;}
-  .node.status-locked text.meta{fill:#9ca3af;}
-
-  .node.status-unlocked rect{fill:#ffffff; opacity:1;}
-  .node.status-unlocked rect{filter:drop-shadow(0 1px 2px rgba(0,0,0,.15));}
-
-  .node.status-cursando rect{fill:#3b82f6; stroke:#1d4ed8; opacity:1;}
-  .node.status-cursando text.code{fill:#fff;}
-  .node.status-cursando text.name{fill:#eff6ff;}
-  .node.status-cursando text.meta{fill:#dbeafe;}
-
-  .node.status-completo rect{fill:#10b981; stroke:#047857; opacity:1;}
-  .node.status-completo text.code{fill:#fff;}
-  .node.status-completo text.name{fill:#ecfdf5;}
-  .node.status-completo text.meta{fill:#d1fae5;}
-
-  path.edge{fill:none;stroke:#94a3b8;stroke-width:1.6;opacity:.85;}
-  path.edge.skip{stroke:#64748b;stroke-width:1.4;opacity:.6;}
-  path.edge.edge-dim{opacity:.18;}
-  path.edge.edge-hot{opacity:1;stroke:#2563eb;stroke-width:2.2;}
-  .colhead{font-size:13px;font-weight:700;fill:#1f2937;}
-
-  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px;}
-  .legend span{display:inline-flex;align-items:center;gap:6px;}
-  .swatch{width:13px;height:13px;border-radius:4px;display:inline-block;border:2px solid #475569;}
-
-  /* --- aside (optativas/atividades) cards --- */
-  #asideWrap{display:flex;gap:18px;flex-wrap:wrap;}
-  .aside-group{flex:1 1 320px;min-width:280px;}
-  .aside-group h3{font-size:13px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
-  .aside-grid{display:flex;flex-wrap:wrap;gap:10px;}
-  .aside-card{
-    width:150px;min-height:72px;border-radius:8px;border:2px solid var(--course-color,#2563eb);
-    background:#fff;color:#1f2937;padding:8px;cursor:pointer;font-size:11px;position:relative;
-    transition:opacity .15s, background .15s;
+  [data-theme="dark"] {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --border: #334155;
+    --border-light: #475569;
+    --accent: #818cf8;
+    --accent-hover: #a5b4fc;
+    --success: #34d399;
+    --success-bg: #064e3b;
+    --success-border: #059669;
+    --warning: #fbbf24;
+    --warning-bg: #78350f;
+    --danger: #f87171;
+    --danger-bg: #7f1d1d;
+    --info: #60a5fa;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.4);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.5);
   }
-  .aside-card.elective{border-style:dashed;}
-  .aside-card .code{font-weight:700;font-size:11px;color:var(--course-color,#2563eb);}
-  .aside-card .name{font-size:10px;margin-top:3px;line-height:1.25;color:#374151;}
-  .aside-card .meta{font-size:9px;color:#6b7280;position:absolute;bottom:6px;left:8px;}
 
-  .aside-card.status-locked{opacity:.5;background:#e2e8f0;}
-  .aside-card.status-locked .code,.aside-card.status-locked .name{color:#94a3b8;}
-  .aside-card.status-unlocked{box-shadow:0 1px 3px rgba(0,0,0,.15);}
-  .aside-card.status-cursando{background:#3b82f6;border-color:#1d4ed8;}
-  .aside-card.status-cursando .code,.aside-card.status-cursando .name,.aside-card.status-cursando .meta{color:#eff6ff;}
-  .aside-card.status-completo{background:#10b981;border-color:#047857;}
-  .aside-card.status-completo .code,.aside-card.status-completo .name,.aside-card.status-completo .meta{color:#ecfdf5;}
+  * { box-sizing: border-box; }
+  
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.5;
+    transition: background 0.3s, color 0.3s;
+  }
 
-  .progress-box{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px;}
-  .progress-box b{color:var(--text);}
+  /* Header */
+  header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
 
-  /* --- Modal/Popup --- */
-  .modal-overlay{
-    position:fixed;top:0;left:0;right:0;bottom:0;
-    background:rgba(0,0,0,0.5);z-index:1000;
-    display:none;align-items:center;justify-content:center;
+  .header-left h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
   }
-  .modal-overlay.active{display:flex;}
-  .modal-content{
-    background:var(--panel);border:1px solid var(--border);
-    border-radius:12px;padding:24px;max-width:400px;
-    width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3);
+
+  .header-left p {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    color: var(--text-secondary);
   }
-  .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
-  .modal-header h3{margin:0;font-size:16px;}
-  .modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px;}
-  .modal-close:hover{color:var(--text);}
-  .modal-section{margin-bottom:16px;}
-  .modal-section h4{margin:0 0 8px;font-size:13px;color:var(--muted);text-transform:uppercase;}
-  .modal-section p{margin:0;font-size:14px;line-height:1.5;}
-  .prereq-list{display:flex;flex-wrap:wrap;gap:6px;}
-  .prereq-tag{
-    background:var(--panel2);border:1px solid var(--border);
-    border-radius:4px;padding:4px 8px;font-size:12px;
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
-  .prereq-tag.met{border-color:var(--ok);color:var(--ok);}
-  .prereq-tag.missing{border-color:var(--danger);color:var(--danger);}
-  .status-buttons{display:flex;gap:8px;margin-top:20px;}
-  .status-btn{
-    flex:1;padding:10px;border-radius:6px;cursor:pointer;
-    font-size:13px;font-weight:500;border:1px solid var(--border);
-    background:var(--panel2);color:var(--text);
+
+  .theme-toggle {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
   }
-  .status-btn:hover{filter:brightness(1.1);}
-  .status-btn.active{background:var(--accent);border-color:var(--accent);color:white;}
+
+  .theme-toggle:hover {
+    background: var(--border);
+    color: var(--text-primary);
+  }
+
+  .theme-toggle svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Main content */
+  main {
+    padding: 24px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  /* Upload section */
+  .upload-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    text-align: center;
+    max-width: 600px;
+    margin: 40px auto;
+    box-shadow: var(--shadow-md);
+  }
+
+  .upload-section.hidden {
+    display: none;
+  }
+
+  .upload-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
+    color: var(--text-muted);
+  }
+
+  .upload-section h2 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .upload-section p {
+    margin: 0 0 24px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .file-input-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  .file-input-wrapper input[type="file"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .file-input-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: white;
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: none;
+  }
+
+  .file-input-btn:hover {
+    background: var(--accent-hover);
+  }
+
+  .file-input-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Loading indicator */
+  .loading-section {
+    display: none;
+    text-align: center;
+    padding: 40px;
+  }
+
+  .loading-section.active {
+    display: block;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .progress-bar {
+    width: 200px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 12px auto 0;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.3s;
+  }
+
+  /* Card sections */
+  .card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card.hidden {
+    display: none;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .card-header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .btn {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: var(--border);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+
+  .btn-danger {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: var(--danger);
+    color: white;
+  }
+
+  /* Review table */
+  .review-details {
+    cursor: pointer;
+  }
+
+  .review-details summary {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 8px 0;
+    user-select: none;
+  }
+
+  .review-details[open] summary {
+    margin-bottom: 12px;
+  }
+
+  .hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+
+  .table-wrapper {
+    max-height: 400px;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+  }
+
+  th, td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    background: var(--bg-tertiary);
+    position: sticky;
+    top: 0;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  td input, td select {
+    width: 100%;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+
+  td input.small {
+    width: 70px;
+  }
+
+  /* Map container with sidebar */
+  .map-container {
+    position: relative;
+    display: flex;
+    gap: 0;
+  }
+
+  #svgHolder {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-secondary);
+    position: relative;
+    height: 75vh;
+    min-width: 0;
+  }
+
+  #svgHolder svg {
+    cursor: grab;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  #svgHolder svg:active {
+    cursor: grabbing;
+  }
+
+  /* Sidebar */
+  .info-sidebar {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border);
+    box-shadow: -4px 0 16px rgba(0,0,0,0.1);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+    z-index: 10;
+    padding: 20px;
+    visibility: hidden;
+  }
+
+  .info-sidebar.active {
+    transform: translateX(0);
+    visibility: visible;
+  }
+
+  .sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .sidebar-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .sidebar-close:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .sidebar-close svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .code-badge {
+    background: var(--accent);
+    color: white;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-block;
+    margin-bottom: 6px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .info-item {
+    background: var(--bg-tertiary);
+    padding: 8px;
+    border-radius: var(--radius-md);
+  }
+
+  .info-item label {
+    display: block;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+    font-weight: 600;
+  }
+
+  .info-item .value {
+    font-size: 12px;
+    color: var(--text-primary);
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .info-item .value.missing {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .info-item .value.long-text {
+    font-size: 11px;
+    max-height: 80px;
+    overflow-y: auto;
+  }
+
+  .prereq-section {
+    margin-bottom: 12px;
+  }
+
+  .prereq-section h4 {
+    margin: 0 0 4px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .prereq-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .prereq-tag {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px 8px;
+    font-size: 11px;
+    color: var(--text-primary);
+  }
+
+  .prereq-tag.met {
+    border-color: var(--success);
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  .prereq-tag.missing {
+    border-color: var(--danger);
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+
+  .status-section {
+    margin-bottom: 12px;
+  }
+
+  .status-section h4 {
+    margin: 0 0 4px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .status-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .status-btn {
+    flex: 1;
+    min-width: 70px;
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    transition: all 0.2s;
+  }
+
+  .status-btn:hover {
+    background: var(--border);
+  }
+
+  .status-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  /* SVG node styling */
+  .node rect {
+    stroke-width: 2;
+    stroke: var(--course-color, #6366f1);
+    transition: fill 0.15s, opacity 0.15s, stroke 0.15s, filter 0.15s;
+  }
+
+  .node text {
+    transition: fill 0.15s;
+  }
+
+  .node text.code {
+    font-weight: 700;
+    font-size: 13px;
+    fill: var(--course-color, #6366f1);
+  }
+
+  .node text.name {
+    font-size: 12px;
+    fill: var(--text-primary);
+  }
+
+  .node text.meta {
+    font-size: 11px;
+    fill: var(--text-secondary);
+  }
+
+  .node {
+    cursor: pointer;
+  }
+
+  .node.elective rect {
+    stroke-dasharray: 5, 3;
+  }
+
+  .node.selected rect {
+    stroke-width: 3;
+    filter: drop-shadow(0 0 8px var(--course-color, #6366f1));
+  }
+
+  .node.status-locked rect {
+    fill: var(--bg-tertiary);
+    stroke: var(--text-muted);
+    opacity: 0.7;
+  }
+
+  .node.status-locked text.code {
+    fill: var(--text-muted);
+  }
+
+  .node.status-locked text.name {
+    fill: var(--text-muted);
+  }
+
+  .node.status-locked text.meta {
+    fill: var(--text-muted);
+  }
+
+  .node.status-unlocked rect {
+    fill: var(--bg-secondary);
+    stroke: var(--course-color, #6366f1);
+    opacity: 1;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.08));
+  }
+
+  .node.status-cursando rect {
+    fill: var(--info);
+    stroke: var(--accent);
+    opacity: 1;
+  }
+
+  .node.status-cursando text.code {
+    fill: white;
+  }
+
+  .node.status-cursando text.name {
+    fill: white;
+  }
+
+  .node.status-cursando text.meta {
+    fill: rgba(255,255,255,0.8);
+  }
+
+  .node.status-completo rect {
+    fill: var(--success);
+    stroke: var(--success-border);
+    opacity: 1;
+  }
+
+  .node.status-completo text.code {
+    fill: white;
+  }
+
+  .node.status-completo text.name {
+    fill: white;
+  }
+
+  .node.status-completo text.meta {
+    fill: rgba(255,255,255,0.8);
+  }
+
+  path.edge {
+    fill: none;
+    stroke: var(--text-muted);
+    stroke-width: 1.5;
+    opacity: 0.7;
+    transition: stroke 0.15s, stroke-width 0.15s, opacity 0.15s;
+  }
+
+  path.edge.skip {
+    stroke: var(--text-muted);
+    stroke-width: 1.3;
+    opacity: 0.5;
+  }
+
+  path.edge.edge-dim {
+    opacity: 0.15;
+  }
+
+  path.edge.edge-hot {
+    opacity: 1;
+    stroke: var(--accent);
+    stroke-width: 2;
+  }
+
+  .colhead {
+    font-size: 13px;
+    font-weight: 600;
+    fill: var(--text-primary);
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 12px;
+  }
+
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    display: inline-block;
+    border: 2px solid var(--border);
+  }
+
+  /* Progress box */
+  .progress-box {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+  }
+
+  .progress-box b {
+    color: var(--text-primary);
+  }
+
+  /* Aside cards */
+  #asideWrap {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .aside-group {
+    flex: 1 1 300px;
+    min-width: 280px;
+  }
+
+  .aside-group h3 {
+    font-size: 13px;
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 600;
+  }
+
+  .aside-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .aside-card {
+    width: 150px;
+    min-height: 70px;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--course-color, #6366f1);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 10px;
+    cursor: pointer;
+    font-size: 11px;
+    position: relative;
+    transition: all 0.15s;
+  }
+
+  .aside-card.elective {
+    border-style: dashed;
+  }
+
+  .aside-card .code {
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--course-color, #6366f1);
+  }
+
+  .aside-card .name {
+    font-size: 10px;
+    margin-top: 4px;
+    line-height: 1.3;
+    color: var(--text-primary);
+  }
+
+  .aside-card .meta {
+    font-size: 9px;
+    color: var(--text-secondary);
+    position: absolute;
+    bottom: 8px;
+    left: 10px;
+  }
+
+  .aside-card.status-locked {
+    opacity: 0.7;
+    background: var(--bg-tertiary);
+    border-color: var(--text-muted);
+  }
+
+  .aside-card.status-locked .code,
+  .aside-card.status-locked .name {
+    color: var(--text-muted);
+  }
+
+  .aside-card.status-unlocked {
+    box-shadow: var(--shadow-sm);
+    background: var(--bg-secondary);
+  }
+
+  .aside-card.status-cursando {
+    background: var(--info);
+    border-color: var(--accent);
+  }
+
+  .aside-card.status-cursando .code,
+  .aside-card.status-cursando .name,
+  .aside-card.status-cursando .meta {
+    color: white;
+  }
+
+  .aside-card.status-completo {
+    background: var(--success);
+    border-color: var(--success-border);
+  }
+
+  .aside-card.status-completo .code,
+  .aside-card.status-completo .name,
+  .aside-card.status-completo .meta {
+    color: white;
+  }
+
+  .aside-card.selected {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+
+  /* Status and warnings */
+  #status {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    white-space: pre-wrap;
+  }
+
+  #warnings {
+    font-size: 12px;
+    color: var(--warning);
+    margin-top: 8px;
+    white-space: pre-wrap;
+    max-height: 120px;
+    overflow: auto;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .header-right {
+      width: 100%;
+      justify-content: flex-end;
+    }
+
+    main {
+      padding: 16px;
+    }
+
+    .upload-section {
+      padding: 24px;
+      margin: 24px auto;
+    }
+
+    .info-sidebar {
+      width: 100%;
+      position: fixed;
+      right: 0;
+      left: 0;
+      top: auto;
+      bottom: 0;
+      height: 60vh;
+      border-left: none;
+      border-top: 1px solid var(--border);
+      transform: translateY(100%);
+    }
+
+    .info-sidebar.active {
+      transform: translateY(0);
+    }
+
+    .status-buttons {
+      flex-direction: column;
+    }
+
+    .status-btn {
+      width: 100%;
+    }
+  }
 </style>
 </head>
 <body>
 <header>
-  <div>
-    <h1>Mapa de Currículo (padrão UFSC / SeTIC)</h1>
-    <p>Envie o PDF "Currículo do Curso" — o mapa é gerado automaticamente. Clique numa disciplina para ver detalhes e marcar progresso.</p>
+  <div class="header-left">
+    <h1>UniPath</h1>
+    <p>Mapa de Currículo Interativo</p>
+  </div>
+  <div class="header-right">
+    <button class="theme-toggle" id="themeToggle" type="button">
+      <svg id="themeIconLight" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <circle cx="12" cy="12" r="5"></circle>
+        <line x1="12" y1="1" x2="12" y2="3"></line>
+        <line x1="12" y1="21" x2="12" y2="23"></line>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+        <line x1="1" y1="12" x2="3" y2="12"></line>
+        <line x1="21" y1="12" x2="23" y2="12"></line>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+      </svg>
+      <svg id="themeIconDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+      </svg>
+      <span id="themeText">Escuro</span>
+    </button>
   </div>
 </header>
 <main>
 
-  <section class="card">
-    <h2><span class="num">1</span> Enviar PDF</h2>
-    <div class="row">
-      <input type="file" id="fileInput" accept="application/pdf">
-      <button id="btnProcess" disabled>Processar PDF e gerar mapa</button>
-      <button class="secondary" id="btnClearData" type="button">Limpar dados salvos</button>
+  <!-- Upload Section -->
+  <div class="upload-section" id="uploadSection">
+    <div class="upload-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+        <polyline points="10 9 9 9 8 9"></polyline>
+      </svg>
     </div>
-    <div id="status">Selecione o arquivo PDF exportado pelo sistema da UFSC (relatório "CURRÍCULO DO CURSO").</div>
-    <div id="warnings"></div>
-  </section>
+    <h2>Carregar Currículo</h2>
+    <p>Envie o PDF "Currículo do Curso" exportado pelo sistema da UFSC (relatório "CURRÍCULO DO CURSO")</p>
+    <div class="file-input-wrapper">
+      <button class="file-input-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span>Selecionar PDF</span>
+      </button>
+      <input type="file" id="fileInput" accept="application/pdf">
+    </div>
+  </div>
 
-  <section class="card" id="reviewSection" style="display:none">
-    <details class="rev">
-      <summary>Revisar / corrigir disciplinas extraídas (abrir se algum pré-requisito ficou errado)</summary>
+  <!-- Loading Section -->
+  <div class="loading-section" id="loadingSection">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Processando PDF...</div>
+    <div class="progress-bar">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+  </div>
+
+  <!-- Review Section -->
+  <section class="card hidden" id="reviewSection">
+    <div class="card-header">
+      <h2>Revisar Disciplinas</h2>
+    </div>
+    <details class="review-details">
+      <summary>Corrigir informações extraídas (abrir se algum pré-requisito ficou errado)</summary>
       <div class="hint">
         A coluna "Equivalentes" (códigos antigos, prefixo ARA) é descartada automaticamente. A coluna de pré-requisitos foi extraída por heurística —
         em disciplinas com várias alternativas "ou"/"eh" encadeadas pode haver erro. Corrija os códigos (separados por vírgula) e clique em "Atualizar mapa".
       </div>
-      <div class="row" style="margin:10px 0;">
-        <button class="secondary" id="btnAddRow" type="button">+ Adicionar disciplina manual</button>
+      <div class="toolbar" style="margin: 12px 0;">
+        <button class="btn" id="btnAddRow" type="button">+ Adicionar disciplina</button>
         <span id="countInfo" class="hint"></span>
       </div>
-      <div class="tbl-wrap">
+      <div class="table-wrapper">
         <table id="reviewTable">
           <thead>
             <tr>
-              <th style="width:110px">Fase</th>
-              <th style="width:110px">Código</th>
+              <th style="width: 100px">Fase</th>
+              <th style="width: 100px">Código</th>
               <th>Nome</th>
-              <th style="width:70px">Tipo</th>
-              <th style="width:70px">H/A</th>
-              <th style="width:220px">Pré-requisitos (códigos, vírgula)</th>
-              <th style="width:40px"></th>
+              <th style="width: 70px">Tipo</th>
+              <th style="width: 70px">H/A</th>
+              <th style="width: 200px">Pré-requisitos</th>
+              <th style="width: 40px"></th>
             </tr>
           </thead>
           <tbody id="reviewBody"></tbody>
         </table>
       </div>
-      <div class="row" style="margin-top:14px;">
-        <button id="btnGenerate">Atualizar mapa</button>
+      <div class="toolbar" style="margin-top: 14px;">
+        <button class="btn btn-primary" id="btnGenerate">Atualizar mapa</button>
       </div>
     </details>
   </section>
 
-  <section class="card" id="mapSection" style="display:none">
-    <h2><span class="num">2</span> Mapa de disciplinas obrigatórias</h2>
-    <div class="toolbar">
-      <button class="secondary" id="btnZoomIn" type="button">+</button>
-      <button class="secondary" id="btnZoomOut" type="button">−</button>
-      <button class="secondary" id="btnZoomReset" type="button">Reset zoom</button>
-      <button class="secondary" id="btnDownload" type="button">Baixar SVG</button>
-      <button class="danger" id="btnClearStatus" type="button">Limpar progresso</button>
+  <!-- Map Section -->
+  <section class="card hidden" id="mapSection">
+    <div class="card-header">
+      <h2>Mapa de Disciplinas</h2>
+      <div class="toolbar">
+        <button class="btn" id="btnZoomIn" type="button">+</button>
+        <button class="btn" id="btnZoomOut" type="button">-</button>
+        <button class="btn" id="btnZoomReset" type="button">Reset</button>
+        <button class="btn" id="btnDownload" type="button">Baixar SVG</button>
+        <button class="btn btn-danger" id="btnClearStatus" type="button">Limpar progresso</button>
+      </div>
     </div>
-    <div id="svgHolder"></div>
+    <div class="map-container">
+      <div id="svgHolder"></div>
+      <div class="info-sidebar" id="infoSidebar">
+        <div class="sidebar-header">
+          <div>
+            <span class="code-badge" id="panelCode">-</span>
+            <h3 id="panelName" style="margin-top: 8px;">-</h3>
+          </div>
+          <button class="sidebar-close" id="sidebarClose" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <label>Fase</label>
+            <div class="value" id="panelPhase">-</div>
+          </div>
+          <div class="info-item">
+            <label>Carga Horária</label>
+            <div class="value" id="panelHA">-</div>
+          </div>
+          <div class="info-item">
+            <label>Tipo</label>
+            <div class="value" id="panelType">-</div>
+          </div>
+          <div class="info-item">
+            <label>Ementa</label>
+            <div class="value long-text" id="panelEmenta">-</div>
+          </div>
+        </div>
+        <div class="prereq-section">
+          <h4>Pré-requisitos</h4>
+          <div class="prereq-list" id="panelPrereqs">-</div>
+        </div>
+        <div class="prereq-section">
+          <h4>Equivalências</h4>
+          <div class="prereq-list" id="panelEquivalents">-</div>
+        </div>
+        <div class="status-section">
+          <h4>Status</h4>
+          <div class="status-buttons">
+            <button class="status-btn" data-status="">Não iniciada</button>
+            <button class="status-btn" data-status="cursando">Cursando</button>
+            <button class="status-btn" data-status="completo">Concluída</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="legend" id="legend"></div>
     <div class="progress-box" id="progressBox"></div>
   </section>
 
-  <section class="card" id="asideSection" style="display:none">
-    <h2><span class="num">3</span> Optativas e Atividades Complementares</h2>
-    <div class="hint">Estas disciplinas ficam fora da trilha principal de pré-requisitos (ou têm pré-requisitos próprios independentes das fases). Clique para marcar progresso também.</div>
-    <div id="asideWrap" style="margin-top:12px;"></div>
+  <!-- Aside Section -->
+  <section class="card hidden" id="asideSection">
+    <div class="card-header">
+      <h2>Optativas e Atividades Complementares</h2>
+    </div>
+    <div class="hint">Estas disciplinas ficam fora da trilha principal de pré-requisitos. Clique para ver detalhes e marcar progresso.</div>
+    <div id="asideWrap" style="margin-top: 16px;"></div>
   </section>
 
-  <div id="courseModal" class="modal-overlay">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="modalTitle">Detalhes da Disciplina</h3>
-        <button class="modal-close" id="modalClose">×</button>
-      </div>
-      <div class="modal-section">
-        <h4>Código</h4>
-        <p id="modalCode">-</p>
-      </div>
-      <div class="modal-section">
-        <h4>Nome</h4>
-        <p id="modalName">-</p>
-      </div>
-      <div class="modal-section">
-        <h4>Carga Horária</h4>
-        <p id="modalHA">-</p>
-      </div>
-      <div class="modal-section">
-        <h4>Pré-requisitos Obrigatórios</h4>
-        <div id="modalPrereqs" class="prereq-list">-</div>
-      </div>
-      <div class="modal-section">
-        <h4>Status</h4>
-        <div class="status-buttons">
-          <button class="status-btn" data-status="">Não iniciada</button>
-          <button class="status-btn" data-status="cursando">Cursando</button>
-          <button class="status-btn" data-status="completo">Concluída</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div id="status"></div>
+  <div id="warnings"></div>
 
 </main>
 
@@ -253,17 +1147,86 @@
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
 /* ---------------------------------------------------------------------
+   CONFIGURAÇÕES CENTRALIZADAS
+--------------------------------------------------------------------- */
+const CONFIG = {
+  colors: {
+    palette: ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#84cc16', '#14b8a6', '#f97316'],
+  },
+  
+  map: {
+    nodeWidth: 220,
+    gutter: 120,
+    colSpacing: 340,
+    rowGap: 24,
+    dummyGap: 10,
+    lineHeight: 15,
+    basePad: 42,
+    topMargin: 60,
+    gutterLaneSpacing: 12,
+  },
+  
+  pdf: {
+    yTolerance: 2.6,
+    maxWarnings: 30,
+  },
+  
+  layout: {
+    barycenterIterations: 8,
+  },
+};
+
+/* ---------------------------------------------------------------------
    STATUS PERSISTENTE (localStorage)
 --------------------------------------------------------------------- */
 let courseStatus = {};
-try { courseStatus = JSON.parse(localStorage.getItem('mapaCurriculoStatus') || '{}'); } catch(e){ courseStatus = {}; }
-function persistStatus(){
-  try { localStorage.setItem('mapaCurriculoStatus', JSON.stringify(courseStatus)); } catch(e){}
+try { 
+  courseStatus = JSON.parse(localStorage.getItem('unipathStatus') || '{}'); 
+} catch(e){ 
+  courseStatus = {}; 
 }
+
+function persistStatus(){
+  try { 
+    localStorage.setItem('unipathStatus', JSON.stringify(courseStatus)); 
+  } catch(e){}
+}
+
 function clearStatus(){
   courseStatus = {};
   persistStatus();
 }
+
+/* ---------------------------------------------------------------------
+   TEMA CLARO/ESCURO
+--------------------------------------------------------------------- */
+let currentTheme = localStorage.getItem('unipathTheme') || 'light';
+
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  const lightIcon = document.getElementById('themeIconLight');
+  const darkIcon = document.getElementById('themeIconDark');
+  const text = document.getElementById('themeText');
+  
+  if (theme === 'dark') {
+    lightIcon.style.display = 'block';
+    darkIcon.style.display = 'none';
+    text.textContent = 'Claro';
+  } else {
+    lightIcon.style.display = 'none';
+    darkIcon.style.display = 'block';
+    text.textContent = 'Escuro';
+  }
+  currentTheme = theme;
+  localStorage.setItem('unipathTheme', theme);
+}
+
+function toggleTheme(){
+  applyTheme(currentTheme === 'light' ? 'dark' : 'light');
+}
+
+applyTheme(currentTheme);
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 
 /* ---------------------------------------------------------------------
    1. EXTRAÇÃO DE TEXTO (linhas) DO PDF
@@ -272,23 +1235,28 @@ async function extractLines(file){
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({data: buf}).promise;
   const lines = [];
+  
   for (let p = 1; p <= pdf.numPages; p++){
     const page = await pdf.getPage(p);
     const content = await page.getTextContent();
     const items = content.items
       .map(it => ({str: it.str, x: it.transform[4], y: it.transform[5], w: it.width || 0}))
       .filter(it => it.str.trim() !== '');
+    
     items.sort((a,b)=> (b.y - a.y) || (a.x - b.x));
-    const Y_TOL = 2.6;
-    let cur = []; let curY = null;
+    
+    let cur = []; 
+    let curY = null;
     const pageLines = [];
+    
     for (const it of items){
-      if (curY === null || Math.abs(it.y - curY) <= Y_TOL){
+      if (curY === null || Math.abs(it.y - curY) <= CONFIG.pdf.yTolerance){
         cur.push(it);
         if (curY === null) curY = it.y;
       } else {
         pageLines.push(finalizeLine(cur));
-        cur = [it]; curY = it.y;
+        cur = [it]; 
+        curY = it.y;
       }
     }
     if (cur.length) pageLines.push(finalizeLine(cur));
@@ -322,11 +1290,13 @@ const ATV_RE = /^ATIVIDADES COMPLEMENTARES$/i;
 const ROWSTART_RE = /^(-|[A-Z]{2,6}\d{3,5})\s+(.*)$/;
 const TIPO_RE = /\b(Ob|Op|Es|Ex)\b/;
 const CODE_RE = /[A-Z]{2,6}\d{3,5}/g;
+const EMENTA_START_RE = /^(Ementa:|EMENTA:|Objetivos:|OBJETIVOS:|Descrição:|DESCRIÇÃO:)$/i;
 
 function parseCurriculo(lines){
   const phases = {};
   let currentPhase = null;
   let pendingHA = null;
+  let currentEmenta = null;
   const warnings = [];
   let optCounter = 0;
 
@@ -343,25 +1313,56 @@ function parseCurriculo(lines){
     if (SKIP_RE.test(line)){ i++; continue; }
 
     let m;
+    
+    // Detecta início de ementa
+    if (EMENTA_START_RE.test(line)){
+      currentEmenta = line.replace(EMENTA_START_RE, '').trim();
+      i++;
+      // Continua coletando linhas da ementa até encontrar novo cabeçalho
+      while (i < n && lines[i] && !SKIP_RE.test(lines[i]) && !PHASE_RE.test(lines[i]) && !OPT_RE.test(lines[i]) && !ATV_RE.test(lines[i]) && !ROWSTART_RE.test(lines[i])){
+        // Para se a linha for muito curta (provavelmente nova seção)
+        if (lines[i].trim().length < 10 && /^[A-Z]/.test(lines[i])) break;
+        currentEmenta += ' ' + lines[i].trim();
+        i++;
+      }
+      continue;
+    }
+
     if ((m = PHASE_RE.exec(line))){
       const num = parseInt(m[1],10);
       currentPhase = ensurePhase('F'+num, num+'ª Fase', num);
-      pendingHA = null; i++; continue;
+      pendingHA = null;
+      currentEmenta = null;
+      i++; 
+      continue;
     }
+    
     if (OPT_RE.test(line)){
       currentPhase = ensurePhase('OPT','Optativas', 9000);
-      pendingHA = null; i++; continue;
+      pendingHA = null;
+      currentEmenta = null;
+      i++; 
+      continue;
     }
+    
     if (ATV_RE.test(line)){
       currentPhase = ensurePhase('ATV','Atividades Complementares', 9001);
-      pendingHA = null; i++; continue;
+      pendingHA = null;
+      currentEmenta = null;
+      i++; 
+      continue;
     }
+    
     if (/^\d{1,4}$/.test(line) && currentPhase){
-      pendingHA = line; i++; continue;
+      pendingHA = line; 
+      i++; 
+      continue;
     }
+    
     if (currentPhase && ROWSTART_RE.test(line) && TIPO_RE.test(line.slice(0,90))){
       let rowText = line;
       let j = i + 1;
+      
       while (j < n){
         const l2 = lines[j];
         if (l2 == null){ j++; continue; }
@@ -372,9 +1373,11 @@ function parseCurriculo(lines){
         rowText += ' ' + l2;
         j++;
       }
-      const course = parseRow(rowText, pendingHA, warnings, () => (++optCounter));
+      
+      const course = parseRow(rowText, pendingHA, currentEmenta, warnings, () => (++optCounter));
       if (course) currentPhase.courses.push(course);
       pendingHA = null;
+      currentEmenta = null;
       i = j;
       continue;
     }
@@ -383,20 +1386,29 @@ function parseCurriculo(lines){
   return {phases, warnings};
 }
 
-function parseRow(rowText, ha, warnings, nextOptId){
+function parseRow(rowText, ha, ementa, warnings, nextOptId){
   const m = ROWSTART_RE.exec(rowText);
   if (!m) return null;
+  
   let code = m[1];
   let rest = m[2];
   const tm = TIPO_RE.exec(rest);
-  if (!tm){ warnings.push('Linha ignorada (sem Tipo): ' + rowText.slice(0,80)); return null; }
+  
+  if (!tm){ 
+    warnings.push('Linha ignorada (sem Tipo): ' + rowText.slice(0,80)); 
+    return null; 
+  }
+  
   const tipo = tm[1];
   const name = rest.slice(0, tm.index).replace(/\s+/g,' ').trim();
   let tail = rest.slice(tm.index + tipo.length).trim();
 
   const am = /^(\d+)\s*(.*)$/.exec(tail);
   let aulas = null;
-  if (am){ aulas = am[1]; tail = am[2]; }
+  if (am){ 
+    aulas = am[1]; 
+    tail = am[2]; 
+  }
 
   if (code === '-'){
     code = 'OPT' + nextOptId() + '_' + (name.replace(/[^A-Za-z0-9]+/g,'').slice(0,12) || 'ITEM');
@@ -404,8 +1416,17 @@ function parseRow(rowText, ha, warnings, nextOptId){
 
   const allCodes = tail.match(CODE_RE) || [];
   const prereqs = [...new Set(allCodes.filter(c => !c.startsWith('ARA') && c !== code))];
+  const equivalents = [...new Set(allCodes.filter(c => c.startsWith('ARA')))];
 
-  return { code, name: name || code, tipo, ha, prereqs };
+  return { 
+    code, 
+    name: name || code, 
+    tipo, 
+    ha: aulas || ha || '', 
+    ementa: ementa || '',
+    prereqs,
+    equivalents
+  };
 }
 
 /* ---------------------------------------------------------------------
@@ -414,59 +1435,96 @@ function parseRow(rowText, ha, warnings, nextOptId){
 let phaseMeta = {};
 let courseList = [];
 let rowSeq = 0;
-let allCourseMeta = {}; // code -> {name, tipo, prereqs, isAside}
+let allCourseMeta = {};
+let selectedCourseCode = null;
 
 const fileInput = document.getElementById('fileInput');
-const btnProcess = document.getElementById('btnProcess');
+const uploadSection = document.getElementById('uploadSection');
+const loadingSection = document.getElementById('loadingSection');
+const loadingText = document.getElementById('loadingText');
+const progressBar = document.getElementById('progressBar');
 const statusEl = document.getElementById('status');
 const warnEl = document.getElementById('warnings');
 
-fileInput.addEventListener('change', () => { btnProcess.disabled = !fileInput.files.length; });
-
-btnProcess.addEventListener('click', async () => {
+fileInput.addEventListener('change', async () => {
   const file = fileInput.files[0];
   if (!file) return;
-  btnProcess.disabled = true;
-  statusEl.textContent = 'Lendo PDF...';
-  warnEl.textContent = '';
+  
+  uploadSection.classList.add('hidden');
+  loadingSection.classList.add('active');
+  loadingText.textContent = 'Lendo PDF...';
+  progressBar.style.width = '20%';
+  
   try {
     const lines = await extractLines(file);
-    statusEl.textContent = 'Interpretando estrutura do currículo...';
+    loadingText.textContent = 'Interpretando estrutura do currículo...';
+    progressBar.style.width = '50%';
+    
     const {phases, warnings} = parseCurriculo(lines);
 
-    phaseMeta = {}; courseList = []; rowSeq = 0;
+    phaseMeta = {}; 
+    courseList = []; 
+    rowSeq = 0;
+    
     Object.keys(phases).forEach(key => {
       const ph = phases[key];
       phaseMeta[key] = {label: ph.label, order: ph.order};
       ph.courses.forEach(c => {
-        courseList.push({ id: 'r'+(++rowSeq), phaseKey: key, code:c.code, name:c.name, tipo:c.tipo, ha:c.ha||'', prereqs:c.prereqs });
+        // Salvar equivalências no mapa
+        if (c.equivalents && c.equivalents.length) {
+          equivalentsMap[c.code] = c.equivalents;
+        }
+        courseList.push({ 
+          id: 'r'+(++rowSeq), 
+          phaseKey: key, 
+          code:c.code, 
+          name:c.name, 
+          tipo:c.tipo, 
+          ha:c.ha||'', 
+          ementa:c.ementa||'',
+          prereqs:c.prereqs,
+          equivalents:c.equivalents||[]
+        });
       });
     });
 
-    statusEl.textContent = `Pronto: ${courseList.length} disciplinas em ${Object.keys(phaseMeta).length} grupos. Gerando mapa...`;
-    if (warnings.length) warnEl.textContent = 'Avisos (' + warnings.length + '):\n' + warnings.slice(0,30).join('\n');
+    loadingText.textContent = 'Gerando mapa...';
+    progressBar.style.width = '80%';
 
     buildReviewTable();
-    document.getElementById('reviewSection').style.display = 'block';
+    document.getElementById('reviewSection').classList.remove('hidden');
     regenerateMap();
-    statusEl.textContent = `Mapa gerado: ${courseList.length} disciplinas em ${Object.keys(phaseMeta).length} grupos. Se algum pré-requisito parecer errado, abra "Revisar/corrigir" acima.`;
+    
+    loadingSection.classList.remove('active');
+    document.getElementById('mapSection').classList.remove('hidden');
     document.getElementById('mapSection').scrollIntoView({behavior:'smooth'});
+    
+    progressBar.style.width = '100%';
+    
+    statusEl.textContent = `Mapa gerado: ${courseList.length} disciplinas em ${Object.keys(phaseMeta).length} grupos.`;
+    
+    if (warnings.length) {
+      warnEl.textContent = 'Avisos (' + warnings.length + '):\n' + warnings.slice(0, CONFIG.pdf.maxWarnings).join('\n');
+    }
   } catch (err) {
     console.error(err);
+    loadingSection.classList.remove('active');
+    uploadSection.classList.remove('hidden');
     statusEl.textContent = 'Erro ao processar o PDF: ' + err.message;
-  } finally {
-    btnProcess.disabled = false;
   }
 });
 
-document.getElementById('btnClearData').addEventListener('click', () => {
+document.getElementById('btnClearData')?.addEventListener('click', () => {
   if (!confirm('Limpar todos os dados salvos (progresso, disciplinas, etc)?')) return;
   clearStatus();
-  localStorage.removeItem('mapaCurriculoStatus');
+  localStorage.removeItem('unipathStatus');
   statusEl.textContent = 'Dados limpos. Carregue um PDF novamente.';
-  document.getElementById('reviewSection').style.display = 'none';
-  document.getElementById('mapSection').style.display = 'none';
-  document.getElementById('asideSection').style.display = 'none';
+  document.getElementById('reviewSection').classList.add('hidden');
+  document.getElementById('mapSection').classList.add('hidden');
+  document.getElementById('asideSection').classList.add('hidden');
+  selectedCourseCode = null;
+  document.getElementById('infoSidebar').classList.remove('active');
+  uploadSection.classList.remove('hidden');
 });
 
 function phaseOptionsHTML(selectedKey){
@@ -496,7 +1554,7 @@ function buildRow(c){
     <td><select class="f-tipo">${['Ob','Op','Es','Ex'].map(t=>`<option ${t===c.tipo?'selected':''}>${t}</option>`).join('')}</select></td>
     <td><input class="f-ha small" value="${esc(c.ha||'')}"></td>
     <td><input class="f-prereq" value="${esc((c.prereqs||[]).join(', '))}"></td>
-    <td><button type="button" class="danger btn-del">×</button></td>
+    <td><button type="button" class="btn btn-danger btn-del">×</button></td>
   `;
   tr.querySelector('.btn-del').addEventListener('click', () => { tr.remove(); updateCountInfo(); });
   return tr;
@@ -505,7 +1563,7 @@ function buildRow(c){
 document.getElementById('btnAddRow').addEventListener('click', () => {
   const firstKey = Object.keys(phaseMeta)[0] || 'F1';
   if (!phaseMeta[firstKey]) phaseMeta[firstKey] = {label:'1ª Fase', order:1};
-  const c = {id:'r'+(++rowSeq), phaseKey:firstKey, code:'NOVO'+rowSeq, name:'Nova disciplina', tipo:'Ob', ha:'', prereqs:[]};
+  const c = {id:'r'+(++rowSeq), phaseKey:firstKey, code:'NOVO'+rowSeq, name:'Nova disciplina', tipo:'Ob', ha:'', ementa:'', prereqs:[], equivalents:[]};
   document.getElementById('reviewBody').appendChild(buildRow(c));
   updateCountInfo();
 });
@@ -522,16 +1580,24 @@ document.getElementById('btnGenerate').addEventListener('click', regenerateMap);
 function esc(s){
   return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
 function wrapText(str, maxChars){
   const words = String(str||'').split(/\s+/).filter(Boolean);
-  const lines = []; let cur = '';
+  const lines = []; 
+  let cur = '';
   words.forEach(w => {
-    if ((cur + ' ' + w).trim().length > maxChars && cur){ lines.push(cur.trim()); cur = w; }
+    if ((cur + ' ' + w).trim().length > maxChars && cur){ 
+      lines.push(cur.trim()); 
+      cur = w; 
+    }
     else cur = (cur ? cur + ' ' : '') + w;
   });
   if (cur) lines.push(cur.trim());
   return lines.length ? lines : [''];
 }
+
+// Mapa para preservar equivalências entre regenerações
+let equivalentsMap = {};
 
 function readCoursesFromTable(){
   const rows = Array.from(document.querySelectorAll('#reviewBody tr'));
@@ -544,24 +1610,27 @@ function readCoursesFromTable(){
     const ha = tr.querySelector('.f-ha').value.trim();
     const prereqs = tr.querySelector('.f-prereq').value.split(',').map(s=>s.trim()).filter(Boolean);
     if (!code) return;
-    courses.push({phaseKey, code, name: name || code, tipo, ha, prereqs});
+    // Preservar equivalências se existirem no mapa
+    const equivalents = equivalentsMap[code] || [];
+    courses.push({phaseKey, code, name: name || code, tipo, ha, ementa: '', prereqs, equivalents});
   });
   return courses;
 }
 
 /* ---------------------------------------------------------------------
-   5. LAYOUT DO MAPA PRINCIPAL (apenas fases numéricas)
+   5. LAYOUT DO MAPA PRINCIPAL
 --------------------------------------------------------------------- */
 const PREFIX_COLORS = {};
-const PALETTE = ['#2563eb','#7c3aed','#059669','#dc2626','#ea580c','#0891b2','#be185d','#4d7c0f','#9333ea','#0d9488'];
+
 function colorFor(code){
   const prefix = code.replace(/\d.*/,'').replace(/_.*/,'') || 'OPT';
-  if (!PREFIX_COLORS[prefix]) PREFIX_COLORS[prefix] = PALETTE[Object.keys(PREFIX_COLORS).length % PALETTE.length];
+  if (!PREFIX_COLORS[prefix]) {
+    PREFIX_COLORS[prefix] = CONFIG.colors.palette[Object.keys(PREFIX_COLORS).length % CONFIG.colors.palette.length];
+  }
   return PREFIX_COLORS[prefix];
 }
 
 function assignLanes(items){
-  // items: [{lo,hi}] -> atribui lane (0,1,2...) sem sobrepor intervalos [lo,hi]
   function overlap(occupied, it){ return !(it.hi <= occupied.lo || it.lo >= occupied.hi); }
   const sorted = [...items].sort((a,b)=> (a.hi-a.lo) - (b.hi-b.lo));
   const laneEnds = [];
@@ -575,49 +1644,44 @@ function assignLanes(items){
 }
 
 /* -------------------------------------------------------------------
-   LAYOUT EM CAMADAS (estilo Sugiyama): cada fase é uma coluna fixa.
-   Pré-requisitos que pulam fases ganham nós-fantasma (invisíveis) nas
-   colunas intermediárias, reservando uma "fatia" de altura por onde a
-   seta passa reto — assim ela nunca atravessa um bloco de disciplina
-   nem precisa subir até o topo do mapa. Depois, algumas passadas de
-   "barycenter" reordenam as disciplinas dentro de cada coluna pra
-   reduzir cruzamentos entre as setas.
+   LAYOUT EM CAMADAS (Sugiyama)
 ------------------------------------------------------------------- */
-const NODE_W = 184, GUTTER = 108, COL_SPACING = NODE_W + GUTTER,
-      ROW_GAP = 22, DUMMY_GAP = 10, LINE_H = 13, BASE_PAD = 36,
-      TOP_MARGIN = 54, GUTTER_LANE_SPACING = 10;
-
 function buildLayout(mainCourses){
   const byPhase = {};
   mainCourses.forEach(c => { (byPhase[c.phaseKey] = byPhase[c.phaseKey] || []).push(c); });
   const colOrder = Object.keys(byPhase).sort((a,b)=> (phaseMeta[a]?phaseMeta[a].order:999) - (phaseMeta[b]?phaseMeta[b].order:999));
-  const colIndex = {}; colOrder.forEach((k,i)=> colIndex[k]=i);
+  const colIndex = {};
+  colOrder.forEach((k,i)=> colIndex[k]=i);
 
-  const nodeMeta = {};      // code -> {isDummy, col, lines, height, course}
-  const columnNodes = {};   // colIdx -> [codes] (ordem, será refinada)
+  const nodeMeta = {};
+  const columnNodes = {};
+  
   colOrder.forEach((k,ci) => {
     columnNodes[ci] = [];
     (byPhase[k]||[]).forEach(c => {
-      const lines = wrapText(c.name, 25);
-      const h = BASE_PAD + lines.length*LINE_H;
+      const lines = wrapText(c.name, 28);
+      const h = CONFIG.map.basePad + lines.length*CONFIG.map.lineHeight;
       nodeMeta[c.code] = {isDummy:false, col:ci, lines, height:h, course:c};
       columnNodes[ci].push(c.code);
     });
   });
 
-  const codeToCol = {}; Object.keys(nodeMeta).forEach(c => codeToCol[c] = nodeMeta[c].col);
+  const codeToCol = {};
+  Object.keys(nodeMeta).forEach(c => codeToCol[c] = nodeMeta[c].col);
   const missing = new Set();
-  const origEdges = [];   // {id, src, tgt}
-  const hops = [];        // {from, to, origId} — sempre entre colunas adjacentes
+  const origEdges = [];
+  const hops = [];
   let dummySeq = 0;
 
   mainCourses.forEach(c => {
     (c.prereqs||[]).forEach(p => {
       if (!(p in codeToCol)){ missing.add(p); return; }
       const sCol = codeToCol[p], tCol = codeToCol[c.code];
-      if (tCol <= sCol) return; // mesma fase ou "pra trás": não gera seta
+      if (tCol <= sCol) return;
+      
       const id = origEdges.length;
       origEdges.push({id, src:p, tgt:c.code});
+      
       if (tCol - sCol === 1){
         hops.push({from:p, to:c.code, origId:id});
       } else {
@@ -634,7 +1698,7 @@ function buildLayout(mainCourses){
     });
   });
 
-  // --- redução de cruzamentos: heurística de barycenter, algumas passadas ---
+  // Redução de cruzamentos com barycenter
   const leftN = {}, rightN = {};
   hops.forEach(h => {
     (rightN[h.from] = rightN[h.from] || []).push(h.to);
@@ -644,7 +1708,7 @@ function buildLayout(mainCourses){
   const indexMap = arr => { const m={}; arr.forEach((id,i)=>m[id]=i); return m; };
   const meanOf = arr => arr.reduce((a,b)=>a+b,0) / arr.length;
 
-  for (let iter = 0; iter < 8; iter++){
+  for (let iter = 0; iter < CONFIG.layout.barycenterIterations; iter++){
     if (iter % 2 === 0){
       for (let c = 1; c <= maxCol; c++){
         const prevIdx = indexMap(columnNodes[c-1]);
@@ -668,18 +1732,26 @@ function buildLayout(mainCourses){
     }
   }
 
-  // --- posições finais (x,y,w,h) ---
+  // Posições finais
   const pos = {};
   colOrder.forEach((k,ci) => {
-    let y = TOP_MARGIN;
+    let y = CONFIG.map.topMargin;
     columnNodes[ci].forEach(id => {
       const meta = nodeMeta[id];
-      pos[id] = { x: ci*COL_SPACING, y, w: NODE_W, h: meta.height, col: ci, isDummy: meta.isDummy, meta };
-      y += meta.height + (meta.isDummy ? DUMMY_GAP : ROW_GAP);
+      pos[id] = { 
+        x: ci*CONFIG.map.colSpacing, 
+        y, 
+        w: CONFIG.map.nodeWidth, 
+        h: meta.height, 
+        col: ci, 
+        isDummy: meta.isDummy, 
+        meta 
+      };
+      y += meta.height + (meta.isDummy ? CONFIG.map.dummyGap : CONFIG.map.rowGap);
     });
   });
 
-  // --- faixas (lanes) dentro de cada corredor entre colunas, pra nenhuma seta se sobrepor ---
+  // Atribuir lanes nos corredores
   const byGutter = {};
   hops.forEach(h => {
     const c = pos[h.from].col;
@@ -691,7 +1763,7 @@ function buildLayout(mainCourses){
     items.forEach(it => it.h.lane = it.lane);
   });
 
-  // --- agrupa os "hops" de volta por pré-requisito original (ordem esquerda->direita) ---
+  // Agrupar hops por pré-requisito original
   const hopsByOrig = {};
   hops.forEach(h => { (hopsByOrig[h.origId] = hopsByOrig[h.origId] || []).push(h); });
 
@@ -704,6 +1776,7 @@ function unlocked(code){
   if (!meta.prereqs || !meta.prereqs.length) return true;
   return meta.prereqs.every(p => !allCourseMeta[p] || courseStatus[p] === 'completo');
 }
+
 function statusClassFor(code){
   const st = courseStatus[code];
   if (st === 'completo') return 'status-completo';
@@ -712,21 +1785,30 @@ function statusClassFor(code){
 }
 
 function buildEdgePath(hopChain, pos){
-  // monta uma única polilinha ortogonal passando por todos os nós-fantasma da cadeia
   const points = [];
   let cx, cy;
+  
   hopChain.forEach((h, idx) => {
     const fromPos = pos[h.from], toPos = pos[h.to];
     const fromMidY = fromPos.y + fromPos.h/2, toMidY = toPos.y + toPos.h/2;
-    if (idx === 0){ cx = fromPos.x + fromPos.w; cy = fromMidY; points.push([cx,cy]); }
-    const laneX = fromPos.x + fromPos.w + 10 + (h.lane||0)*GUTTER_LANE_SPACING;
+    
+    if (idx === 0){ 
+      cx = fromPos.x + fromPos.w; 
+      cy = fromMidY; 
+      points.push([cx,cy]); 
+    }
+    
+    const laneX = fromPos.x + fromPos.w + 10 + (h.lane||0)*CONFIG.map.gutterLaneSpacing;
+    
     points.push([laneX, cy]);
     points.push([laneX, toMidY]);
     cy = toMidY;
+    
     const isLast = idx === hopChain.length - 1;
     cx = isLast ? (toPos.x - 5) : (toPos.x + toPos.w);
     points.push([cx, cy]);
   });
+  
   return 'M' + points.map(p=>p.join(',')).join(' L');
 }
 
@@ -744,10 +1826,9 @@ function renderSVG(layout){
 
   colOrder.forEach((k,ci) => {
     const label = (phaseMeta[k]&&phaseMeta[k].label) || k;
-    parts.push(`<text x="${ci*COL_SPACING + 92}" y="20" text-anchor="middle" class="colhead">${esc(label)}</text>`);
+    parts.push(`<text x="${ci*CONFIG.map.colSpacing + CONFIG.map.nodeWidth/2}" y="20" text-anchor="middle" class="colhead">${esc(label)}</text>`);
   });
 
-  // uma única <path> por pré-requisito original, mesmo quando atravessa várias fases
   origEdges.forEach(e => {
     const chain = hopsByOrig[e.id];
     if (!chain) return;
@@ -762,7 +1843,9 @@ function renderSVG(layout){
     const haTxt = course.ha ? (course.ha+' h/a') : '';
     const elective = course.tipo === 'Op' ? ' elective' : '';
     const stCls = statusClassFor(code);
-    parts.push(`<g class="node ${stCls}${elective}" id="node-${esc(code)}" data-code="${esc(code)}" style="--course-color:${color}">
+    const selected = selectedCourseCode === code ? ' selected' : '';
+    
+    parts.push(`<g class="node ${stCls}${elective}${selected}" id="node-${esc(code)}" data-code="${esc(code)}" style="--course-color:${color}">
       <title>${esc(code)} — ${esc(course.name)}${course.prereqs&&course.prereqs.length?('\nPré-requisitos: '+course.prereqs.join(', ')):''}</title>
       <rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" rx="8"/>
       <text x="${n.x+n.w/2}" y="${n.y+16}" text-anchor="middle" class="code">${esc(code)}</text>
@@ -771,13 +1854,13 @@ function renderSVG(layout){
     </g>`);
   });
 
-  const totalW = colOrder.length*COL_SPACING + 40;
+  const totalW = colOrder.length*CONFIG.map.colSpacing + 40;
   const totalH = maxBottom + 40;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalW} ${totalH}">
     <defs>
       <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="userSpaceOnUse">
-        <path d="M0,0 L6,3 L0,6 Z" fill="#64748b"/>
+        <path d="M0,0 L6,3 L0,6 Z" fill="var(--text-muted)"/>
       </marker>
     </defs>
     <g id="viewport">${parts.join('')}</g>
@@ -787,13 +1870,13 @@ function renderSVG(layout){
 function buildLegend(){
   const el = document.getElementById('legend');
   const prefixItems = Object.entries(PREFIX_COLORS).map(([prefix,color]) =>
-    `<span><span class="swatch" style="border-color:${color};background:#fff"></span>${esc(prefix)}</span>`);
+    `<span><span class="swatch" style="border-color:${color};background:var(--bg-secondary)"></span>${esc(prefix)}</span>`);
   const statusItems = [
-    '<span><span class="swatch" style="background:#10b981;border-color:#047857"></span>Concluída</span>',
-    '<span><span class="swatch" style="background:#3b82f6;border-color:#1d4ed8"></span>Cursando</span>',
-    '<span><span class="swatch" style="background:#fff;border-color:#2563eb"></span>Disponível (pré-requisitos ok)</span>',
-    '<span><span class="swatch" style="background:#e2e8f0;border-color:#94a3b8;opacity:.6"></span>Bloqueada</span>',
-    '<span><span class="swatch" style="background:#fff;border-style:dashed;border-color:#334155"></span>Optativa</span>',
+    '<span><span class="swatch" style="background:var(--success);border-color:var(--success-border)"></span>Concluída</span>',
+    '<span><span class="swatch" style="background:var(--info);border-color:var(--accent)"></span>Cursando</span>',
+    '<span><span class="swatch" style="background:var(--bg-secondary);border-color:var(--accent)"></span>Disponível</span>',
+    '<span><span class="swatch" style="background:var(--bg-tertiary);border-color:var(--border);opacity:.6"></span>Bloqueada</span>',
+    '<span><span class="swatch" style="background:var(--bg-secondary);border-style:dashed;border-color:var(--border)"></span>Optativa</span>',
   ];
   el.innerHTML = statusItems.join('') + '<span style="width:1px;background:var(--border);align-self:stretch;"></span>' + prefixItems.join('');
 }
@@ -806,12 +1889,12 @@ function updateProgressBox(){
   const bloqueada = codes.length - completo - cursando - disponivel;
   document.getElementById('progressBox').innerHTML =
     `<span><b>${completo}</b> concluídas</span><span><b>${cursando}</b> cursando</span>` +
-    `<span><b>${disponivel}</b> disponíveis agora</span><span><b>${bloqueada}</b> bloqueadas</span>` +
-    `<span>de <b>${codes.length}</b> disciplinas no total</span>`;
+    `<span><b>${disponivel}</b> disponíveis</span><span><b>${bloqueada}</b> bloqueadas</span>` +
+    `<span>de <b>${codes.length}</b> total</span>`;
 }
 
 /* ---------------------------------------------------------------------
-   6. GERAÇÃO COMPLETA (chamada após processar PDF ou "Atualizar mapa")
+   6. GERAÇÃO COMPLETA
 --------------------------------------------------------------------- */
 function regenerateMap(){
   const courses = readCoursesFromTable();
@@ -823,7 +1906,17 @@ function regenerateMap(){
   const asideCourses = courses.filter(c => !(phaseMeta[c.phaseKey] && phaseMeta[c.phaseKey].order < 9000));
 
   allCourseMeta = {};
-  courses.forEach(c => { allCourseMeta[c.code] = {name:c.name, tipo:c.tipo, prereqs:c.prereqs, ha:c.ha}; });
+  courses.forEach(c => { 
+    allCourseMeta[c.code] = {
+      name:c.name, 
+      tipo:c.tipo, 
+      prereqs:c.prereqs, 
+      ha:c.ha,
+      ementa:c.ementa,
+      equivalents:c.equivalents||[],
+      phaseKey: c.phaseKey
+    }; 
+  });
 
   const layout = buildLayout(mainCourses);
   document.getElementById('svgHolder').innerHTML = renderSVG(layout);
@@ -831,12 +1924,13 @@ function regenerateMap(){
   updateProgressBox();
 
   if (layout.missing.length){
-    warnEl.textContent = 'Códigos de pré-requisito referenciados mas não encontrados na tabela (ignorados): ' + layout.missing.join(', ');
+    warnEl.textContent = 'Códigos de pré-requisito referenciados mas não encontrados: ' + layout.missing.join(', ');
   }
 
   renderAside(asideCourses);
 
-  document.getElementById('mapSection').style.display = 'block';
+  document.getElementById('mapSection').classList.remove('hidden');
+  document.getElementById('asideSection').classList.remove('hidden');
   document.getElementById('asideSection').style.display = asideCourses.length ? 'block' : 'none';
   setupPanZoom();
   attachNodeInteractions();
@@ -847,6 +1941,7 @@ function renderAside(asideCourses){
   wrap.innerHTML = '';
   const groups = {};
   asideCourses.forEach(c => { (groups[c.phaseKey] = groups[c.phaseKey] || []).push(c); });
+  
   Object.keys(groups).sort((a,b)=> (phaseMeta[a]?phaseMeta[a].order:999)-(phaseMeta[b]?phaseMeta[b].order:999)).forEach(key => {
     const label = (phaseMeta[key]&&phaseMeta[key].label) || key;
     const groupEl = document.createElement('div');
@@ -854,12 +1949,15 @@ function renderAside(asideCourses){
     const haSum = groups[key].reduce((s,c)=> s + (parseInt(c.ha)||0), 0);
     groupEl.innerHTML = `<h3>${esc(label)}${haSum?(' — '+haSum+' h/a'):''}</h3><div class="aside-grid"></div>`;
     const grid = groupEl.querySelector('.aside-grid');
+    
     groups[key].forEach(c => {
       const color = colorFor(c.code);
       const elective = c.tipo === 'Op' ? ' elective' : '';
       const stCls = statusClassFor(c.code);
+      const selected = selectedCourseCode === c.code ? ' selected' : '';
+      
       const card = document.createElement('div');
-      card.className = `aside-card ${stCls}${elective}`;
+      card.className = `aside-card ${stCls}${elective}${selected}`;
       card.id = 'aside-' + c.code;
       card.dataset.code = c.code;
       card.style.setProperty('--course-color', color);
@@ -872,59 +1970,132 @@ function renderAside(asideCourses){
 }
 
 /* ---------------------------------------------------------------------
-   7. INTERAÇÃO: clique = ciclar status, botão direito = voltar status
+   7. SIDEBAR DE INFORMAÇÕES
 --------------------------------------------------------------------- */
-function cycleStatus(code){
-  const cur = courseStatus[code];
-  if (!cur) courseStatus[code] = 'cursando';
-  else if (cur === 'cursando') courseStatus[code] = 'completo';
-  else delete courseStatus[code];
-  persistStatus();
+function selectCourse(code){
+  selectedCourseCode = code;
+  const meta = allCourseMeta[code];
+  if (!meta) return;
+
+  document.getElementById('panelCode').textContent = code;
+  document.getElementById('panelName').textContent = meta.name;
+  document.getElementById('panelPhase').textContent = phaseMeta[meta.phaseKey]?.label || '-';
+  document.getElementById('panelHA').textContent = meta.ha ? meta.ha + ' h/a' : '-';
+  document.getElementById('panelType').textContent = meta.tipo || '-';
+  document.getElementById('panelEmenta').textContent = meta.ementa || '-';
+  document.getElementById('panelEmenta').classList.toggle('missing', !meta.ementa);
+
+  const prereqContainer = document.getElementById('panelPrereqs');
+  if (!meta.prereqs || !meta.prereqs.length){
+    prereqContainer.innerHTML = '<span style="color:var(--text-muted)">Nenhum pré-requisito</span>';
+  } else {
+    prereqContainer.innerHTML = meta.prereqs.map(p => {
+      const met = courseStatus[p] === 'completo';
+      const exists = allCourseMeta[p];
+      const cls = met ? 'met' : (exists ? 'missing' : '');
+      const label = exists ? p : p + ' (não encontrada)';
+      return `<span class="prereq-tag ${cls}">${esc(label)}</span>`;
+    }).join('');
+  }
+
+  const equivContainer = document.getElementById('panelEquivalents');
+  if (!meta.equivalents || !meta.equivalents.length){
+    equivContainer.innerHTML = '<span style="color:var(--text-muted)">Nenhuma equivalência</span>';
+  } else {
+    equivContainer.innerHTML = meta.equivalents.map(e => 
+      `<span class="prereq-tag">${esc(e)}</span>`
+    ).join('');
+  }
+
+  const currentStatus = courseStatus[code] || '';
+  document.querySelectorAll('.status-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.status === currentStatus);
+  });
+
+  refreshAllStyles();
+  document.getElementById('infoSidebar').classList.add('active');
+}
+
+function closeSidebar(){
+  selectedCourseCode = null;
+  document.getElementById('infoSidebar').classList.remove('active');
   refreshAllStyles();
 }
+
+document.getElementById('sidebarClose').addEventListener('click', closeSidebar);
 
 function refreshAllStyles(){
   Object.keys(allCourseMeta).forEach(code => {
     const cls = statusClassFor(code);
     const elective = allCourseMeta[code].tipo === 'Op' ? ' elective' : '';
+    const selected = selectedCourseCode === code ? ' selected' : '';
+    
     const nodeEl = document.getElementById('node-'+code);
-    if (nodeEl) nodeEl.setAttribute('class', `node ${cls}${elective}`);
+    if (nodeEl) nodeEl.setAttribute('class', `node ${cls}${elective}${selected}`);
+    
     const cardEl = document.getElementById('aside-'+code);
-    if (cardEl) cardEl.className = `aside-card ${cls}${elective}`;
+    if (cardEl) cardEl.className = `aside-card ${cls}${elective}${selected}`;
   });
   updateProgressBox();
 }
 
+document.querySelectorAll('.status-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (!selectedCourseCode) return;
+    const newStatus = btn.dataset.status;
+    if (newStatus === ''){
+      delete courseStatus[selectedCourseCode];
+    } else {
+      courseStatus[selectedCourseCode] = newStatus;
+    }
+    persistStatus();
+    refreshAllStyles();
+    document.querySelectorAll('.status-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.status === newStatus);
+    });
+  });
+});
+
+/* ---------------------------------------------------------------------
+   8. INTERAÇÃO
+--------------------------------------------------------------------- */
 function attachNodeInteractions(){
   const svg = document.querySelector('#svgHolder svg');
   if (svg && !svg.dataset.bound){
     svg.addEventListener('click', (e) => {
       const g = e.target.closest('.node');
-      if (!g) return;
-      openModal(g.dataset.code);
+      if (g) {
+        e.stopPropagation();
+        selectCourse(g.dataset.code);
+      } else {
+        closeSidebar();
+      }
     });
     svg.dataset.bound = '1';
   }
+  
   const aside = document.getElementById('asideWrap');
   if (aside && !aside.dataset.bound){
     aside.addEventListener('click', (e) => {
       const c = e.target.closest('.aside-card');
-      if (!c) return;
-      openModal(c.dataset.code);
+      if (c) {
+        e.stopPropagation();
+        selectCourse(c.dataset.code);
+      }
     });
     aside.dataset.bound = '1';
   }
 }
 
 document.getElementById('btnClearStatus').addEventListener('click', () => {
-  if (!confirm('Limpar todo o progresso marcado (cursando/concluída)?')) return;
+  if (!confirm('Limpar todo o progresso marcado?')) return;
   courseStatus = {};
   persistStatus();
   refreshAllStyles();
 });
 
 /* ---------------------------------------------------------------------
-   8. ZOOM / PAN / DOWNLOAD
+   9. ZOOM / PAN / DOWNLOAD
 --------------------------------------------------------------------- */
 let viewState = {scale:1, tx:0, ty:0};
 
@@ -952,7 +2123,6 @@ function setupPanZoom(){
     applyTransform();
   });
   window.addEventListener('mouseup', () => dragging=false);
-  // evita disparar clique-em-nó depois de arrastar o mapa
   svg.addEventListener('click', (e) => { if (moved){ e.stopPropagation(); moved=false; } }, true);
 }
 
@@ -978,71 +2148,6 @@ document.getElementById('btnDownload').addEventListener('click', () => {
   a.href = url; a.download = 'mapa-curriculo.svg';
   a.click();
   URL.revokeObjectURL(url);
-});
-
-/* ---------------------------------------------------------------------
-   9. MODAL DE DETALHES DA DISCIPLINA
---------------------------------------------------------------------- */
-const modal = document.getElementById('courseModal');
-const modalClose = document.getElementById('modalClose');
-let currentModalCode = null;
-
-function openModal(code){
-  const meta = allCourseMeta[code];
-  if (!meta) return;
-  currentModalCode = code;
-
-  document.getElementById('modalTitle').textContent = 'Detalhes da Disciplina';
-  document.getElementById('modalCode').textContent = code;
-  document.getElementById('modalName').textContent = meta.name;
-  document.getElementById('modalHA').textContent = meta.ha ? meta.ha + ' h/a' : '-';
-
-  const prereqContainer = document.getElementById('modalPrereqs');
-  if (!meta.prereqs || !meta.prereqs.length){
-    prereqContainer.innerHTML = '<span style="color:var(--muted)">Nenhum pré-requisito</span>';
-  } else {
-    prereqContainer.innerHTML = meta.prereqs.map(p => {
-      const met = courseStatus[p] === 'completo';
-      const exists = allCourseMeta[p];
-      const cls = met ? 'met' : (exists ? 'missing' : '');
-      const label = exists ? p : p + ' (não encontrada)';
-      return `<span class="prereq-tag ${cls}">${esc(label)}</span>`;
-    }).join('');
-  }
-
-  const currentStatus = courseStatus[code] || '';
-  document.querySelectorAll('.status-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.status === currentStatus);
-  });
-
-  modal.classList.add('active');
-}
-
-function closeModal(){
-  modal.classList.remove('active');
-  currentModalCode = null;
-}
-
-modalClose.addEventListener('click', closeModal);
-modal.addEventListener('click', (e) => {
-  if (e.target === modal) closeModal();
-});
-
-document.querySelectorAll('.status-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    if (!currentModalCode) return;
-    const newStatus = btn.dataset.status;
-    if (newStatus === ''){
-      delete courseStatus[currentModalCode];
-    } else {
-      courseStatus[currentModalCode] = newStatus;
-    }
-    persistStatus();
-    refreshAllStyles();
-    document.querySelectorAll('.status-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.status === newStatus);
-    });
-  });
 });
 </script>
 </body>
